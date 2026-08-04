@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "Eclipse Transport"
+description = "Eclipse Transport — luxury private ground transportation in Los Angeles. Mobile-first booking app with multi-step reservation flow, vehicle selection, Zelle and Venmo payment, and confirmation."
+version = "1.0.0"
+id = "artifacts/eclipse-transport"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 19988
+
+[services.development]
+run = "pnpm --filter @workspace/eclipse-transport run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/eclipse-transport", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/eclipse-transport/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "19988"
+BASE_PATH = "/"

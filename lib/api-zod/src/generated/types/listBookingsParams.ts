@@ -5,7 +5,8 @@
  * Eclipse Transport API — private luxury transportation in Los Angeles
  * OpenAPI spec version: 0.1.0
  */
+import type { BookingStatus } from './bookingStatus';
 
-export interface HealthStatus {
-  status: string;
-}
+export type ListBookingsParams = {
+status?: BookingStatus;
+};

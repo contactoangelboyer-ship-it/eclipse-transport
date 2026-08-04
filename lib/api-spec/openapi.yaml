@@ -3,13 +3,22 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: Eclipse Transport API — private luxury transportation in Los Angeles
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: services
+    description: Service offerings
+  - name: fleet
+    description: Vehicle fleet
+  - name: bookings
+    description: Booking management
+  - name: contact
+    description: Contact inquiries
+
 paths:
   /healthz:
     get:
@@ -24,6 +33,159 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /services:
+    get:
+      operationId: listServices
+      tags: [services]
+      summary: List all services
+      responses:
+        "200":
+          description: List of services
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Service"
+
+  /fleet:
+    get:
+      operationId: listFleet
+      tags: [fleet]
+      summary: List all vehicles in fleet
+      responses:
+        "200":
+          description: List of vehicles
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Vehicle"
+
+  /bookings:
+    get:
+      operationId: listBookings
+      tags: [bookings]
+      summary: List bookings
+      parameters:
+        - name: status
+          in: query
+          schema:
+            $ref: "#/components/schemas/BookingStatus"
+      responses:
+        "200":
+          description: List of bookings
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/BookingSummary"
+    post:
+      operationId: createBooking
+      tags: [bookings]
+      summary: Create a new booking
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BookingInput"
+      responses:
+        "201":
+          description: Booking created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Booking"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /bookings/{id}:
+    get:
+      operationId: getBooking
+      tags: [bookings]
+      summary: Get a booking by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: number
+      responses:
+        "200":
+          description: Booking details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Booking"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    patch:
+      operationId: updateBooking
+      tags: [bookings]
+      summary: Update booking status
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: number
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BookingUpdate"
+      responses:
+        "200":
+          description: Updated booking
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Booking"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /contact:
+    post:
+      operationId: createContact
+      tags: [contact]
+      summary: Submit a contact inquiry
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ContactInput"
+      responses:
+        "201":
+          description: Inquiry submitted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ContactInquiry"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
 components:
   schemas:
     HealthStatus:
@@ -34,3 +196,283 @@ components:
       required:
         - status
 
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+      required:
+        - error
+
+    Service:
+      type: object
+      properties:
+        id:
+          type: number
+        name:
+          type: string
+        description:
+          type: string
+        basePrice:
+          type: number
+        icon:
+          type: string
+        features:
+          type: array
+          items:
+            type: string
+      required:
+        - id
+        - name
+        - description
+        - basePrice
+        - features
+
+    Vehicle:
+      type: object
+      properties:
+        id:
+          type: number
+        slug:
+          type: string
+        name:
+          type: string
+        model:
+          type: string
+        category:
+          type: string
+        maxPassengers:
+          type: number
+        maxLuggage:
+          type: number
+        flatRate:
+          type: number
+        hourlyRate:
+          type: number
+        amenities:
+          type: array
+          items:
+            type: string
+        imageUrl:
+          type: ["string", "null"]
+      required:
+        - id
+        - slug
+        - name
+        - model
+        - category
+        - maxPassengers
+        - maxLuggage
+        - flatRate
+        - hourlyRate
+        - amenities
+
+    BookingStatus:
+      type: string
+      enum:
+        - pending
+        - confirmed
+        - completed
+        - cancelled
+
+    BookingInput:
+      type: object
+      properties:
+        tripType:
+          type: string
+        vehicleId:
+          type: string
+        pickupLocation:
+          type: string
+        dropoffLocation:
+          type: ["string", "null"]
+        pickupDate:
+          type: string
+        pickupTime:
+          type: string
+        passengers:
+          type: number
+        luggage:
+          type: number
+        duration:
+          type: ["number", "null"]
+        extraStops:
+          type: ["number", "null"]
+        passengerName:
+          type: string
+        passengerEmail:
+          type: string
+        passengerPhone:
+          type: string
+        addonMeetGreet:
+          type: ["boolean", "null"]
+        addonChildSeat:
+          type: ["boolean", "null"]
+        addonFlowers:
+          type: ["boolean", "null"]
+        addonFlightMonitor:
+          type: ["boolean", "null"]
+        specialInstructions:
+          type: ["string", "null"]
+        estimatedTotal:
+          type: ["number", "null"]
+      required:
+        - tripType
+        - vehicleId
+        - pickupLocation
+        - pickupDate
+        - pickupTime
+        - passengers
+        - luggage
+        - passengerName
+        - passengerEmail
+        - passengerPhone
+
+    BookingUpdate:
+      type: object
+      properties:
+        status:
+          $ref: "#/components/schemas/BookingStatus"
+
+    Booking:
+      type: object
+      properties:
+        id:
+          type: number
+        confirmationCode:
+          type: string
+        tripType:
+          type: string
+        vehicleId:
+          type: string
+        pickupLocation:
+          type: string
+        dropoffLocation:
+          type: ["string", "null"]
+        pickupDate:
+          type: string
+        pickupTime:
+          type: string
+        passengers:
+          type: number
+        luggage:
+          type: number
+        duration:
+          type: ["number", "null"]
+        extraStops:
+          type: ["number", "null"]
+        passengerName:
+          type: string
+        passengerEmail:
+          type: string
+        passengerPhone:
+          type: string
+        addonMeetGreet:
+          type: ["boolean", "null"]
+        addonChildSeat:
+          type: ["boolean", "null"]
+        addonFlowers:
+          type: ["boolean", "null"]
+        addonFlightMonitor:
+          type: ["boolean", "null"]
+        specialInstructions:
+          type: ["string", "null"]
+        estimatedTotal:
+          type: ["number", "null"]
+        status:
+          $ref: "#/components/schemas/BookingStatus"
+        createdAt:
+          type: string
+      required:
+        - id
+        - confirmationCode
+        - tripType
+        - vehicleId
+        - pickupLocation
+        - pickupDate
+        - pickupTime
+        - passengers
+        - luggage
+        - passengerName
+        - passengerEmail
+        - passengerPhone
+        - status
+        - createdAt
+
+    BookingSummary:
+      type: object
+      properties:
+        id:
+          type: number
+        confirmationCode:
+          type: string
+        tripType:
+          type: string
+        vehicleId:
+          type: string
+        passengerName:
+          type: string
+        pickupDate:
+          type: string
+        pickupTime:
+          type: string
+        status:
+          $ref: "#/components/schemas/BookingStatus"
+        estimatedTotal:
+          type: ["number", "null"]
+        createdAt:
+          type: string
+      required:
+        - id
+        - confirmationCode
+        - tripType
+        - vehicleId
+        - passengerName
+        - pickupDate
+        - pickupTime
+        - status
+        - createdAt
+
+    ContactInput:
+      type: object
+      properties:
+        name:
+          type: string
+        email:
+          type: string
+        phone:
+          type: ["string", "null"]
+        subject:
+          type: string
+        message:
+          type: string
+      required:
+        - name
+        - email
+        - subject
+        - message
+
+    ContactInquiry:
+      type: object
+      properties:
+        id:
+          type: number
+        name:
+          type: string
+        email:
+          type: string
+        phone:
+          type: ["string", "null"]
+        subject:
+          type: string
+        message:
+          type: string
+        createdAt:
+          type: string
+      required:
+        - id
+        - name
+        - email
+        - subject
+        - message
+        - createdAt
