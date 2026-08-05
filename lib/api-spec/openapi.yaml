@@ -3,13 +3,24 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: Eclipse Transport API — private luxury transportation in Los Angeles
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: bookings
+    description: Reservation management
+  - name: services
+    description: Transport services
+  - name: fleet
+    description: Fleet vehicles
+  - name: contact
+    description: Contact inquiries
+  - name: admin
+    description: Admin operations (require authentication)
+
 paths:
   /healthz:
     get:
@@ -24,7 +35,514 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /services:
+    get:
+      operationId: listServices
+      tags: [services]
+      summary: List all services
+      responses:
+        "200":
+          description: List of services
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Service"
+
+  /fleet:
+    get:
+      operationId: listFleet
+      tags: [fleet]
+      summary: List all fleet vehicles
+      responses:
+        "200":
+          description: List of vehicles
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Vehicle"
+
+  /bookings:
+    get:
+      operationId: listBookings
+      tags: [bookings]
+      summary: List all bookings
+      parameters:
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [pending, confirmed, completed, cancelled]
+      responses:
+        "200":
+          description: List of bookings
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Booking"
+    post:
+      operationId: createBooking
+      tags: [bookings]
+      summary: Create a new booking
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BookingInput"
+      responses:
+        "201":
+          description: Created booking
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Booking"
+        "400":
+          description: Invalid input
+
+  /bookings/{id}:
+    get:
+      operationId: getBooking
+      tags: [bookings]
+      summary: Get a booking by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Booking details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Booking"
+        "404":
+          description: Not found
+    patch:
+      operationId: updateBooking
+      tags: [bookings]
+      summary: Update booking status
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BookingUpdate"
+      responses:
+        "200":
+          description: Updated booking
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Booking"
+        "404":
+          description: Not found
+
+  /bookings/{id}/cancel:
+    patch:
+      operationId: cancelBooking
+      tags: [bookings]
+      summary: Cancel a booking
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Cancelled booking
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Booking"
+        "404":
+          description: Not found
+
+  /contact:
+    post:
+      operationId: submitContact
+      tags: [contact]
+      summary: Submit a contact inquiry
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ContactInput"
+      responses:
+        "201":
+          description: Inquiry submitted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ContactInquiry"
+        "400":
+          description: Invalid input
+
+  /bookings/summary:
+    get:
+      operationId: getBookingSummary
+      tags: [bookings]
+      summary: Get booking statistics summary
+      responses:
+        "200":
+          description: Booking summary stats
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BookingSummary"
+
+  # ── Admin endpoints ──────────────────────────────────────────────
+
+  /admin/login:
+    post:
+      operationId: adminLogin
+      tags: [admin]
+      summary: Admin login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminLoginInput"
+      responses:
+        "200":
+          description: Authenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminToken"
+        "401":
+          description: Invalid credentials
+
+  /admin/fleet:
+    get:
+      operationId: adminListFleet
+      tags: [admin]
+      summary: List all vehicles (admin)
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: List of vehicles
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Vehicle"
+        "401":
+          description: Unauthorized
+    post:
+      operationId: adminCreateFleet
+      tags: [admin]
+      summary: Create a new vehicle
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/VehicleInput"
+      responses:
+        "201":
+          description: Created vehicle
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Vehicle"
+        "401":
+          description: Unauthorized
+
+  /admin/fleet/{id}:
+    patch:
+      operationId: adminUpdateFleet
+      tags: [admin]
+      summary: Update a vehicle
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/VehicleInput"
+      responses:
+        "200":
+          description: Updated vehicle
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Vehicle"
+        "404":
+          description: Not found
+        "401":
+          description: Unauthorized
+    delete:
+      operationId: adminDeleteFleet
+      tags: [admin]
+      summary: Delete a vehicle
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          description: Not found
+        "401":
+          description: Unauthorized
+
+  /admin/services:
+    get:
+      operationId: adminListServices
+      tags: [admin]
+      summary: List all services (admin)
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: List of services
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Service"
+        "401":
+          description: Unauthorized
+    post:
+      operationId: adminCreateService
+      tags: [admin]
+      summary: Create a new service
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ServiceInput"
+      responses:
+        "201":
+          description: Created service
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Service"
+        "401":
+          description: Unauthorized
+
+  /admin/services/{id}:
+    patch:
+      operationId: adminUpdateService
+      tags: [admin]
+      summary: Update a service
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ServiceInput"
+      responses:
+        "200":
+          description: Updated service
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Service"
+        "404":
+          description: Not found
+        "401":
+          description: Unauthorized
+    delete:
+      operationId: adminDeleteService
+      tags: [admin]
+      summary: Delete a service
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          description: Not found
+        "401":
+          description: Unauthorized
+
+  /admin/zones:
+    get:
+      operationId: adminListZones
+      tags: [admin]
+      summary: List all zones
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: List of zones
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Zone"
+        "401":
+          description: Unauthorized
+    post:
+      operationId: adminCreateZone
+      tags: [admin]
+      summary: Create a new zone
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ZoneInput"
+      responses:
+        "201":
+          description: Created zone
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Zone"
+        "401":
+          description: Unauthorized
+
+  /admin/contacts:
+    get:
+      operationId: adminListContacts
+      tags: [admin]
+      summary: List all contact inquiries (admin)
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: List of contact inquiries
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ContactInquiry"
+        "401":
+          description: Unauthorized
+
+  /admin/analytics:
+    get:
+      operationId: adminGetAnalytics
+      tags: [admin]
+      summary: Get analytics and revenue data (admin)
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Analytics data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminAnalytics"
+        "401":
+          description: Unauthorized
+
+  /admin/zones/{id}:
+    patch:
+      operationId: adminUpdateZone
+      tags: [admin]
+      summary: Update a zone
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ZoneInput"
+      responses:
+        "200":
+          description: Updated zone
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Zone"
+        "404":
+          description: Not found
+        "401":
+          description: Unauthorized
+    delete:
+      operationId: adminDeleteZone
+      tags: [admin]
+      summary: Delete a zone
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          description: Not found
+        "401":
+          description: Unauthorized
+
 components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+
   schemas:
     HealthStatus:
       type: object
@@ -34,3 +552,332 @@ components:
       required:
         - status
 
+    Service:
+      type: object
+      required: [id, name, description, icon, priceFrom]
+      properties:
+        id:
+          type: number
+        name:
+          type: string
+        description:
+          type: string
+        icon:
+          type: string
+        priceFrom:
+          type: number
+        features:
+          type: array
+          items:
+            type: string
+
+    ServiceInput:
+      type: object
+      required: [name, description, icon, priceFrom]
+      properties:
+        name:
+          type: string
+          minLength: 1
+        description:
+          type: string
+          minLength: 1
+        icon:
+          type: string
+        priceFrom:
+          type: number
+          minimum: 0
+        features:
+          type: array
+          items:
+            type: string
+
+    Vehicle:
+      type: object
+      required: [id, name, model, year, capacity, imageUrl]
+      properties:
+        id:
+          type: number
+        name:
+          type: string
+        model:
+          type: string
+        year:
+          type: number
+        capacity:
+          type: number
+        imageUrl:
+          type: string
+        description:
+          type: string
+        amenities:
+          type: array
+          items:
+            type: string
+        vehicleType:
+          type: string
+        luggageCapacity:
+          type: number
+        flatRate:
+          type: number
+        hourlyRate:
+          type: number
+
+    VehicleInput:
+      type: object
+      required: [name, model, year, capacity, imageUrl]
+      properties:
+        name:
+          type: string
+          minLength: 1
+        model:
+          type: string
+          minLength: 1
+        year:
+          type: number
+          minimum: 2000
+          maximum: 2030
+        capacity:
+          type: number
+          minimum: 1
+        imageUrl:
+          type: string
+        description:
+          type: string
+        amenities:
+          type: array
+          items:
+            type: string
+        vehicleType:
+          type: string
+        luggageCapacity:
+          type: number
+          minimum: 0
+        flatRate:
+          type: number
+          minimum: 0
+        hourlyRate:
+          type: number
+          minimum: 0
+
+    Zone:
+      type: object
+      required: [id, name, surcharge, active, createdAt]
+      properties:
+        id:
+          type: number
+        name:
+          type: string
+        description:
+          type: string
+        surcharge:
+          type: number
+        active:
+          type: boolean
+        createdAt:
+          type: string
+
+    ZoneInput:
+      type: object
+      required: [name, surcharge]
+      properties:
+        name:
+          type: string
+          minLength: 1
+        description:
+          type: string
+        surcharge:
+          type: number
+          minimum: 0
+        active:
+          type: boolean
+
+    AdminLoginInput:
+      type: object
+      required: [password]
+      properties:
+        password:
+          type: string
+          minLength: 1
+
+    AdminToken:
+      type: object
+      required: [token]
+      properties:
+        token:
+          type: string
+
+    Booking:
+      type: object
+      required: [id, passengerName, passengerEmail, passengerPhone, pickupLocation, dropoffLocation, pickupDate, pickupTime, serviceType, status, createdAt]
+      properties:
+        id:
+          type: number
+        passengerName:
+          type: string
+        passengerEmail:
+          type: string
+        passengerPhone:
+          type: string
+        pickupLocation:
+          type: string
+        dropoffLocation:
+          type: string
+        pickupDate:
+          type: string
+        pickupTime:
+          type: string
+        serviceType:
+          type: string
+        passengers:
+          type: number
+        specialRequests:
+          type: ["string", "null"]
+        status:
+          type: string
+          enum: [pending, confirmed, completed, cancelled]
+        totalPrice:
+          type: ["number", "null"]
+        createdAt:
+          type: string
+
+    BookingInput:
+      type: object
+      required: [passengerName, passengerEmail, passengerPhone, pickupLocation, dropoffLocation, pickupDate, pickupTime, serviceType]
+      properties:
+        passengerName:
+          type: string
+          minLength: 1
+        passengerEmail:
+          type: string
+        passengerPhone:
+          type: string
+          minLength: 1
+        pickupLocation:
+          type: string
+          minLength: 1
+        dropoffLocation:
+          type: string
+          minLength: 1
+        pickupDate:
+          type: string
+        pickupTime:
+          type: string
+        serviceType:
+          type: string
+        passengers:
+          type: number
+          minimum: 1
+          maximum: 14
+        luggage:
+          type: number
+          minimum: 0
+        vehicleType:
+          type: string
+        estimatedPrice:
+          type: number
+          minimum: 0
+        specialRequests:
+          type: string
+
+    BookingUpdate:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [pending, confirmed, completed, cancelled]
+        totalPrice:
+          type: number
+        specialRequests:
+          type: string
+
+    ContactInput:
+      type: object
+      required: [name, email, phone, message]
+      properties:
+        name:
+          type: string
+          minLength: 1
+        email:
+          type: string
+        phone:
+          type: string
+        message:
+          type: string
+          minLength: 1
+        subject:
+          type: string
+
+    ContactInquiry:
+      type: object
+      required: [id, name, email, message, createdAt]
+      properties:
+        id:
+          type: number
+        name:
+          type: string
+        email:
+          type: string
+        phone:
+          type: ["string", "null"]
+        subject:
+          type: ["string", "null"]
+        message:
+          type: string
+        createdAt:
+          type: string
+
+    BookingSummary:
+      type: object
+      required: [total, pending, confirmed, completed, cancelled]
+      properties:
+        total:
+          type: number
+        pending:
+          type: number
+        confirmed:
+          type: number
+        completed:
+          type: number
+        cancelled:
+          type: number
+
+    MonthlyRevenue:
+      type: object
+      required: [month, revenue, bookings]
+      properties:
+        month:
+          type: string
+        revenue:
+          type: number
+        bookings:
+          type: number
+
+    ServiceBookingCount:
+      type: object
+      required: [service, count]
+      properties:
+        service:
+          type: string
+        count:
+          type: number
+        revenue:
+          type: number
+
+    AdminAnalytics:
+      type: object
+      required: [totalRevenue, avgBookingValue, completedTrips, monthlyRevenue, bookingsByService]
+      properties:
+        totalRevenue:
+          type: number
+        avgBookingValue:
+          type: number
+        completedTrips:
+          type: number
+        monthlyRevenue:
+          type: array
+          items:
+            $ref: "#/components/schemas/MonthlyRevenue"
+        bookingsByService:
+          type: array
+          items:
+            $ref: "#/components/schemas/ServiceBookingCount"

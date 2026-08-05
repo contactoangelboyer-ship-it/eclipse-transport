@@ -1,0 +1,1148 @@
+import { useState } from "react";
+import { useForm, Controller } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
+import { Layout } from "@/components/layout/Layout";
+import { GooglePlacesInput } from "@/components/GooglePlacesInput";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { useCreateBooking, getListBookingsQueryKey } from "@workspace/api-client-react";
+import { useQueryClient } from "@tanstack/react-query";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  CheckCircle2, Loader2, Plane, MapPin, Clock, Calendar,
+  Users, Briefcase, Plus, Minus, ArrowRight, Phone,
+  Heart, Music, Trophy, Car, Church, Wind,
+  ChevronRight, ChevronLeft, Luggage, Wifi, Star, Check, Shield,
+  Smartphone, Copy, CreditCard, Info, Zap
+} from "lucide-react";
+
+import suburbanImg from "@assets/generated_images/fleet-suburban.jpg";
+import escaladeImg from "@assets/generated_images/fleet-escalade.jpg";
+import lincolnImg from "@assets/generated_images/fleet-lincoln.jpg";
+import mercedesImg from "@assets/generated_images/fleet-mercedes.jpg";
+import eclipseLogoTransparent from "@assets/eclipse-logo-new-transparent.png";
+
+/* ─────────────────────────── data ─────────────────────────── */
+
+const vehicles = [
+  {
+    id: "suburban", name: "Chevrolet Suburban", model: "2025 Suburban S",
+    category: "SUV", pax: 7, bags: 6, flatRate: 120, hourlyRate: 80,
+    image: suburbanImg,
+    amenities: ["High-speed Wi-Fi", "Privacy glass", "Climate control", "Bottled water"],
+  },
+  {
+    id: "escalade", name: "Cadillac Escalade ESV", model: "2024 Escalade ESV",
+    category: "SUV", pax: 7, bags: 6, flatRate: 140, hourlyRate: 95,
+    image: escaladeImg,
+    amenities: ["Panoramic sunroof", "Premium audio", "Heated seats", "Privacy glass"],
+  },
+  {
+    id: "lincoln", name: "Lincoln Continental", model: "2024 Continental",
+    category: "Sedan", pax: 3, bags: 3, flatRate: 85, hourlyRate: 65,
+    image: lincolnImg,
+    amenities: ["Executive rear seating", "Noise cancellation", "Rear climate control"],
+  },
+  {
+    id: "mercedes", name: "Mercedes-Benz S-Class", model: "2024 S-Class",
+    category: "Sedan", pax: 3, bags: 3, flatRate: 100, hourlyRate: 75,
+    image: mercedesImg,
+    amenities: ["Ambient lighting", "Massaging seats", "Burmester audio", "Rear screens"],
+  },
+];
+
+const tripTypes = [
+  { id: "Airport Transfer",   icon: Plane,     title: "Airport Transfer",   desc: "LAX, BUR, LGB, SNA, ONT" },
+  { id: "Corporate Travel",   icon: Briefcase, title: "Corporate Travel",   desc: "Executive black car" },
+  { id: "Date Night",         icon: Heart,     title: "Date Night",         desc: "3-hour evening package" },
+  { id: "Prom",               icon: Car,       title: "Prom",               desc: "Elegant & safe ride" },
+  { id: "Concerts",           icon: Music,     title: "Concerts & Shows",   desc: "Drop-off & pickup" },
+  { id: "Sports Events",      icon: Trophy,    title: "Sports Events",      desc: "All major LA venues" },
+  { id: "Around Town",        icon: MapPin,    title: "Around Town",        desc: "Point-to-point in LA" },
+  { id: "Wedding",            icon: Church,    title: "Wedding",            desc: "Bridal fleet service" },
+  { id: "By the Hour",        icon: Clock,     title: "By the Hour",        desc: "3–12 hrs, as directed" },
+  { id: "Air Transportation", icon: Wind,      title: "Air Transportation", desc: "Private aviation transfers" },
+];
+
+const addons = [
+  { id: "addonMeetGreet",    label: "Meet & Greet",      desc: "Chauffeur meets you inside the terminal", price: 25 },
+  { id: "addonFlightMonitor",label: "Flight Monitoring",  desc: "Real-time tracking, no extra wait fees",  price: 0, included: true },
+  { id: "addonChildSeat",    label: "Child Seat",         desc: "Certified child safety seat",             price: 20 },
+  { id: "addonFlowers",      label: "Welcome Flowers",    desc: "Seasonal bouquet for arrivals & events",  price: 45 },
+];
+
+const ZELLE_PHONE = "626 391 3844";
+
+/* ─────────────────────────── schema ─────────────────────────── */
+
+const bookingSchema = z.object({
+  tripType:           z.string().min(1),
+  pickupDate:         z.string().optional(),
+  pickupTime:         z.string().optional(),
+  pickupLocation:     z.string().optional(),
+  dropoffLocation:    z.string().optional(),
+  flightNumber:       z.string().optional(),
+  airline:            z.string().optional(),
+  terminal:           z.string().optional(),
+  duration:           z.coerce.number().optional(),
+  returnTrip:         z.boolean().optional(),
+  passengers:         z.coerce.number().min(1).max(14),
+  luggage:            z.coerce.number().min(0).max(10),
+  vehicleId:          z.string().optional(),
+  passengerName:      z.string().optional(),
+  passengerEmail:     z.string().optional(),
+  passengerPhone:     z.string().optional(),
+  addonMeetGreet:     z.boolean().optional(),
+  addonChildSeat:     z.boolean().optional(),
+  addonFlowers:       z.boolean().optional(),
+  addonFlightMonitor: z.boolean().optional(),
+  extraStops:         z.coerce.number().optional(),
+  specialInstructions:z.string().optional(),
+});
+
+type BookingFormValues = z.infer<typeof bookingSchema>;
+
+/* ─────────────────────────── stepper ─────────────────────────── */
+
+const STEPS = ["Service", "Trip Details", "Vehicle", "Your Info", "Payment"];
+
+function StepBar({ current }: { current: number }) {
+  return (
+    <div className="w-full bg-white/95 backdrop-blur-md border-b border-gray-100 sticky top-0 z-50 shadow-sm">
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 py-0">
+        <div className="flex items-center gap-3 sm:gap-5">
+          {/* Logo */}
+          <a href="/" className="shrink-0 flex items-center py-2">
+            <img
+              src={eclipseLogoTransparent}
+              alt="Eclipse Transport"
+              className="h-10 sm:h-11 w-auto object-contain"
+            />
+          </a>
+          {/* Divider */}
+          <div className="w-px h-7 bg-gray-200 shrink-0 hidden sm:block" />
+          {/* Steps */}
+          <div className="flex items-center flex-1 min-w-0">
+            {STEPS.map((label, i) => {
+              const idx = i + 1;
+              const done = current > idx;
+              const active = current === idx;
+              return (
+                <div key={label} className="flex items-center flex-1 last:flex-none">
+                  <div className="flex flex-col items-center py-3.5 gap-1">
+                    <motion.div
+                      animate={{
+                        backgroundColor: done || active ? "#1A1A1A" : "#F3F4F6",
+                        scale: active ? 1.1 : 1,
+                      }}
+                      transition={{ duration: 0.3 }}
+                      className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold
+                        ${done || active ? "text-white shadow-md" : "text-gray-400"}`}
+                    >
+                      {done ? <Check className="w-3.5 h-3.5" strokeWidth={3} /> : idx}
+                    </motion.div>
+                    <span className={`text-[9px] font-bold uppercase tracking-wider whitespace-nowrap hidden sm:block transition-colors
+                      ${active ? "text-[#1A1A1A]" : done ? "text-[#1A1A1A]/50" : "text-gray-300"}`}>
+                      {label}
+                    </span>
+                  </div>
+                  {i < STEPS.length - 1 && (
+                    <div className="flex-1 mx-1.5">
+                      <motion.div
+                        className="h-[2px] rounded-full"
+                        animate={{ backgroundColor: done ? "#1A1A1A" : "#E5E7EB" }}
+                        transition={{ duration: 0.4 }}
+                      />
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ─────────────────────────── counter ─────────────────────────── */
+
+function Counter({ value, onChange, min = 0, max = 14, label }: {
+  value: number; onChange: (v: number) => void; min?: number; max?: number; label: React.ReactNode;
+}) {
+  return (
+    <div className="flex items-center justify-between p-4 bg-gray-50 rounded-2xl">
+      <span className="text-sm font-medium text-gray-700">{label}</span>
+      <div className="flex items-center gap-3">
+        <button
+          type="button"
+          onClick={() => onChange(Math.max(min, value - 1))}
+          className="w-9 h-9 rounded-full border-2 border-gray-200 bg-white flex items-center justify-center hover:border-gray-400 active:scale-90 transition-all disabled:opacity-30 touch-manipulation"
+          disabled={value <= min}
+        >
+          <Minus className="w-3.5 h-3.5" />
+        </button>
+        <span className="w-7 text-center text-sm font-bold">{value}</span>
+        <button
+          type="button"
+          onClick={() => onChange(Math.min(max, value + 1))}
+          className="w-9 h-9 rounded-full border-2 border-gray-200 bg-white flex items-center justify-center hover:border-gray-400 active:scale-90 transition-all disabled:opacity-30 touch-manipulation"
+          disabled={value >= max}
+        >
+          <Plus className="w-3.5 h-3.5" />
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/* ─────────────────────────── step animation ─────────────────────────── */
+
+function StepPanel({ children, stepKey }: { children: React.ReactNode; stepKey: number }) {
+  return (
+    <motion.div
+      key={stepKey}
+      initial={{ opacity: 0, y: 16 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -12 }}
+      transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
+    >
+      {children}
+    </motion.div>
+  );
+}
+
+/* ─────────────────────────── Zelle copy button ─────────────────────────── */
+function ZelleCopy({ text }: { text: string }) {
+  const [copied, setCopied] = useState(false);
+  const handleCopy = () => {
+    navigator.clipboard.writeText(text);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+  return (
+    <button
+      type="button"
+      onClick={handleCopy}
+      className="flex items-center gap-1.5 text-xs font-semibold text-[#1A1A1A]/60 hover:text-[#1A1A1A] transition-colors touch-manipulation"
+    >
+      {copied ? <Check className="w-3.5 h-3.5 text-green-500" /> : <Copy className="w-3.5 h-3.5" />}
+      {copied ? "Copied!" : "Copy"}
+    </button>
+  );
+}
+
+/* ─────────────────────────── main component ─────────────────────────── */
+
+export default function Book() {
+  const searchParams = new URLSearchParams(window.location.search);
+  const defaultService = searchParams.get("service") || "Airport Transfer";
+  const defaultVehicle  = searchParams.get("vehicle") || "";
+
+  const [step, setStep]           = useState(1);
+  const [isSuccess, setIsSuccess] = useState(false);
+  const queryClient   = useQueryClient();
+  const createBooking = useCreateBooking();
+
+  const { register, handleSubmit, watch, setValue, trigger, control, formState: { errors } } =
+    useForm<BookingFormValues>({
+      resolver: zodResolver(bookingSchema),
+      defaultValues: {
+        tripType:           tripTypes.find(t => t.id === defaultService) ? defaultService : "Airport Transfer",
+        passengers:         2,
+        luggage:            2,
+        duration:           3,
+        extraStops:         0,
+        vehicleId:          defaultVehicle,
+        addonFlightMonitor: true,
+      },
+      mode: "onChange",
+    });
+
+  const values   = watch();
+  const tripType = values.tripType;
+  const isHourly  = tripType === "By the Hour";
+  const isAirport = tripType === "Airport Transfer";
+  const vehicle   = vehicles.find(v => v.id === values.vehicleId);
+
+  /* ── price ── */
+  let baseRate = 0;
+  if (vehicle) {
+    baseRate = isHourly
+      ? vehicle.hourlyRate * (values.duration || 3)
+      : vehicle.flatRate;
+  }
+  const addonsTotal =
+    (values.addonMeetGreet  ? 25 : 0) +
+    (values.addonChildSeat  ? 20 : 0) +
+    (values.addonFlowers    ? 45 : 0) +
+    ((values.extraStops || 0) * 15);
+  const gratuity      = baseRate > 0 ? Math.round(baseRate * 0.20) : 0;
+  const totalEstimate = baseRate > 0 ? baseRate + addonsTotal + gratuity : 0;
+
+  /* ── navigation ── */
+  const handleNext = async () => {
+    let fields: (keyof BookingFormValues)[] = [];
+    if (step === 2) {
+      fields = ["pickupDate", "pickupTime", "pickupLocation"];
+      if (!isHourly && !isAirport) fields.push("dropoffLocation");
+    }
+    if (step === 3 && !values.vehicleId) return;
+    if (step === 4) fields = ["passengerName", "passengerEmail", "passengerPhone"];
+    const ok = await trigger(fields);
+    if (ok) { setStep(s => s + 1); window.scrollTo({ top: 0, behavior: "smooth" }); }
+  };
+
+  const handleBack = () => {
+    setStep(s => s - 1);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const onSubmit = (data: BookingFormValues) => {
+    const reqs: string[] = [];
+    if (data.addonMeetGreet)       reqs.push("Meet & Greet (+$25)");
+    if (data.addonChildSeat)       reqs.push("Child Seat (+$20)");
+    if (data.addonFlowers)         reqs.push("Welcome Flowers (+$45)");
+    if (data.addonFlightMonitor)   reqs.push("Flight Monitoring (included)");
+    if ((data.extraStops || 0) > 0) reqs.push(`${data.extraStops} extra stop(s) (+$${(data.extraStops || 0) * 15})`);
+    if (data.specialInstructions)  reqs.push(`Notes: ${data.specialInstructions}`);
+    if (data.flightNumber)         reqs.push(`Flight: ${data.airline || ""} ${data.flightNumber} / Terminal ${data.terminal || "TBD"}`);
+    reqs.push(`Payment: Zelle sent to ${ZELLE_PHONE}`);
+
+    createBooking.mutate({
+      data: {
+        passengerName:   data.passengerName  || "Guest",
+        passengerEmail:  data.passengerEmail || "",
+        passengerPhone:  data.passengerPhone || "",
+        pickupDate:      data.pickupDate     || "",
+        pickupTime:      data.pickupTime     || "",
+        pickupLocation:  data.pickupLocation || "",
+        dropoffLocation: isHourly ? `As directed (${data.duration} hours)` : (data.dropoffLocation || "TBD"),
+        passengers:      data.passengers,
+        luggage:         data.luggage,
+        vehicleType:     vehicle?.name || data.vehicleId || "",
+        serviceType:     data.tripType,
+        specialRequests: reqs.join(" | "),
+        estimatedPrice:  totalEstimate,
+      }
+    }, {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: getListBookingsQueryKey() });
+        setIsSuccess(true);
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      },
+    });
+  };
+
+  /* ─────────────── success screen ─────────────── */
+  if (isSuccess) {
+    return (
+      <Layout>
+        <div className="min-h-[100dvh] bg-gray-50 px-4 py-16 flex items-start justify-center">
+          <motion.div
+            initial={{ opacity: 0, y: 24 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+            className="max-w-md w-full"
+          >
+            {/* Checkmark */}
+            <div className="text-center mb-8">
+              <div className="w-20 h-20 bg-green-50 rounded-full flex items-center justify-center mx-auto mb-6 shadow-sm">
+                <CheckCircle2 className="w-10 h-10 text-green-500" strokeWidth={1.5} />
+              </div>
+              <h1 className="text-2xl font-bold text-gray-900 mb-2">Booking Received!</h1>
+              <p className="text-gray-500 text-sm leading-relaxed">
+                Thank you, <strong>{values.passengerName}</strong>. We'll confirm your reservation within 15 minutes.
+              </p>
+            </div>
+
+            {/* ── Zelle payment reminder ── */}
+            {totalEstimate > 0 && (
+              <div className="bg-[#6B11D0]/5 border-2 border-[#6B11D0]/20 rounded-2xl p-5 mb-4">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-10 h-10 bg-[#6B11D0] rounded-xl flex items-center justify-center shrink-0">
+                    <Zap className="w-5 h-5 text-white" strokeWidth={2} />
+                  </div>
+                  <div>
+                    <p className="font-bold text-gray-900 text-sm">Send Payment via Zelle</p>
+                    <p className="text-xs text-gray-500">Required to confirm your booking</p>
+                  </div>
+                </div>
+                <div className="bg-white rounded-xl p-4 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-gray-500 font-medium uppercase tracking-wide">Send to</span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-bold text-gray-900">{ZELLE_PHONE}</span>
+                      <ZelleCopy text={ZELLE_PHONE} />
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between border-t border-gray-100 pt-3">
+                    <span className="text-xs text-gray-500 font-medium uppercase tracking-wide">Amount</span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-lg font-bold text-[#6B11D0]">${totalEstimate}</span>
+                      <ZelleCopy text={`${totalEstimate}`} />
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-2 bg-amber-50 rounded-lg p-2.5 text-xs text-amber-800">
+                    <Info className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+                    <span>Add your name in the memo so we can match your payment. Booking is confirmed once payment is received.</span>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Booking summary */}
+            {totalEstimate > 0 && (
+              <div className="bg-white rounded-2xl border border-gray-100 p-5 mb-6 shadow-sm">
+                <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-4">Booking Summary</p>
+                <div className="space-y-2.5 text-sm">
+                  <div className="flex justify-between"><span className="text-gray-500">Service</span><span className="font-medium">{values.tripType}</span></div>
+                  <div className="flex justify-between"><span className="text-gray-500">Vehicle</span><span className="font-medium">{vehicle?.name}</span></div>
+                  <div className="flex justify-between"><span className="text-gray-500">Date</span><span className="font-medium">{values.pickupDate} · {values.pickupTime}</span></div>
+                  <div className="flex justify-between"><span className="text-gray-500">Passengers</span><span className="font-medium">{values.passengers}</span></div>
+                  <div className="border-t border-gray-100 pt-3 flex justify-between font-bold text-base">
+                    <span>Total</span><span>${totalEstimate}</span>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <p className="text-center text-xs text-gray-400 mb-6">A confirmation will be sent to {values.passengerEmail}.</p>
+
+            <a href="/" className="block w-full h-13 flex items-center justify-center bg-[#1A1A1A] text-white rounded-2xl text-sm font-bold uppercase tracking-widest hover:bg-gray-800 transition-colors active:scale-95 py-4">
+              Back to Home
+            </a>
+          </motion.div>
+        </div>
+      </Layout>
+    );
+  }
+
+  /* ─────────────── main layout ─────────────── */
+  return (
+    <Layout hideLogo={true}>
+      <StepBar current={step} />
+
+      <div className="bg-gray-50 min-h-[calc(100dvh-57px)] pb-28 lg:pb-12">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6 lg:py-10">
+          <div className="flex flex-col lg:flex-row gap-6 lg:gap-10 items-start">
+
+            {/* ─── MAIN FORM ─── */}
+            <div className="w-full lg:flex-1 min-w-0">
+              <form onSubmit={handleSubmit(onSubmit)}>
+                <AnimatePresence mode="wait">
+
+                  {/* ═══ STEP 1 — Service Type ═══ */}
+                  {step === 1 && (
+                    <StepPanel stepKey={1}>
+                      <div className="mb-6">
+                        <h1 className="text-xl font-bold text-gray-900">What type of trip?</h1>
+                        <p className="text-gray-400 text-sm mt-1">Choose the service that best fits your occasion.</p>
+                      </div>
+                      <div className="grid grid-cols-2 gap-3">
+                        {tripTypes.map(t => {
+                          const Icon = t.icon;
+                          const selected = tripType === t.id;
+                          return (
+                            <button
+                              key={t.id}
+                              type="button"
+                              onClick={() => setValue("tripType", t.id)}
+                              className={`relative flex flex-col items-start gap-3 p-4 rounded-2xl border-2 text-left transition-all cursor-pointer touch-manipulation active:scale-[0.97]
+                                ${selected
+                                  ? "border-[#1A1A1A] bg-[#1A1A1A] shadow-lg"
+                                  : "border-gray-100 bg-white hover:border-gray-300 hover:shadow-md"}`}
+                            >
+                              <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 transition-colors
+                                ${selected ? "bg-white/15" : "bg-gray-50 border border-gray-100"}`}>
+                                <Icon className={`w-5 h-5 ${selected ? "text-white" : "text-gray-500"}`} strokeWidth={1.5} />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className={`text-sm font-semibold leading-tight ${selected ? "text-white" : "text-gray-800"}`}>{t.title}</p>
+                                <p className={`text-xs mt-1 leading-snug ${selected ? "text-white/55" : "text-gray-400"}`}>{t.desc}</p>
+                              </div>
+                              {selected && (
+                                <div className="absolute top-3 right-3 w-5 h-5 rounded-full bg-white/20 flex items-center justify-center">
+                                  <Check className="w-3 h-3 text-white" strokeWidth={3} />
+                                </div>
+                              )}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </StepPanel>
+                  )}
+
+                  {/* ═══ STEP 2 — Trip Details ═══ */}
+                  {step === 2 && (
+                    <StepPanel stepKey={2}>
+                      <div className="mb-5">
+                        <h1 className="text-xl font-bold text-gray-900">Trip details</h1>
+                        <p className="text-gray-400 text-sm mt-1">Tell us when and where. All times are local LA time.</p>
+                      </div>
+
+                      <div className="space-y-3">
+                        {/* Date & Time */}
+                        <div className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm">
+                          <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-4">Date & Time</p>
+                          <div className="grid grid-cols-2 gap-3">
+                            <div>
+                              <label className="block text-xs font-semibold text-gray-600 mb-2">Pickup Date</label>
+                              <Input
+                                type="date"
+                                {...register("pickupDate")}
+                                className={`h-12 bg-gray-50 border-gray-200 rounded-xl text-sm font-medium ${errors.pickupDate ? "border-red-400" : ""}`}
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-xs font-semibold text-gray-600 mb-2">Pickup Time</label>
+                              <Input
+                                type="time"
+                                {...register("pickupTime")}
+                                className={`h-12 bg-gray-50 border-gray-200 rounded-xl text-sm font-medium ${errors.pickupTime ? "border-red-400" : ""}`}
+                              />
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Duration for hourly */}
+                        {isHourly && (
+                          <div className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm">
+                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-4">Duration</p>
+                            <Counter
+                              label={<span className="flex items-center gap-2 text-sm font-medium text-gray-700"><Clock className="w-4 h-4 text-gray-400" />{`${values.duration || 3} hour${(values.duration || 3) > 1 ? "s" : ""} (min 3)`}</span>}
+                              value={values.duration || 3}
+                              onChange={v => setValue("duration", v)}
+                              min={3}
+                              max={12}
+                            />
+                          </div>
+                        )}
+
+                        {/* Locations */}
+                        <div className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm space-y-4">
+                          <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Locations</p>
+                          <div>
+                            <label className="block text-xs font-semibold text-gray-600 mb-2">
+                              <MapPin className="w-3.5 h-3.5 inline mr-1 text-gray-400" />
+                              Pickup Location
+                            </label>
+                            <Controller
+                              name="pickupLocation"
+                              control={control}
+                              render={({ field }) => (
+                                <GooglePlacesInput
+                                  value={field.value || ""}
+                                  onChange={field.onChange}
+                                  placeholder="Address, hotel, or airport terminal"
+                                  className={`h-12 bg-gray-50 border-gray-200 rounded-xl ${errors.pickupLocation ? "border-red-400" : ""}`}
+                                />
+                              )}
+                            />
+                          </div>
+
+                          {!isHourly && (
+                            <div>
+                              <label className="block text-xs font-semibold text-gray-600 mb-2">
+                                <MapPin className="w-3.5 h-3.5 inline mr-1 text-gray-400" />
+                                Drop-off Location
+                              </label>
+                              <Controller
+                                name="dropoffLocation"
+                                control={control}
+                                render={({ field }) => (
+                                  <GooglePlacesInput
+                                    value={field.value || ""}
+                                    onChange={field.onChange}
+                                    placeholder="Address, hotel, or venue"
+                                    className={`h-12 bg-gray-50 border-gray-200 rounded-xl ${errors.dropoffLocation ? "border-red-400" : ""}`}
+                                  />
+                                )}
+                              />
+                            </div>
+                          )}
+
+                          <Counter
+                            label={<span className="flex items-center gap-2 text-sm font-medium text-gray-700"><MapPin className="w-4 h-4 text-gray-400" />Extra stops</span>}
+                            value={values.extraStops || 0}
+                            onChange={v => setValue("extraStops", v)}
+                            min={0}
+                            max={5}
+                          />
+                        </div>
+
+                        {/* Flight info */}
+                        {isAirport && (
+                          <div className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm">
+                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-4">
+                              Flight Details <span className="text-gray-300 font-normal normal-case ml-1">(optional)</span>
+                            </p>
+                            <div className="grid grid-cols-3 gap-3">
+                              <div className="col-span-2">
+                                <label className="block text-xs font-semibold text-gray-600 mb-2">Airline</label>
+                                <Input placeholder="e.g. Delta" {...register("airline")} className="h-12 bg-gray-50 border-gray-200 rounded-xl text-sm" />
+                              </div>
+                              <div>
+                                <label className="block text-xs font-semibold text-gray-600 mb-2">Flight #</label>
+                                <Input placeholder="DL 234" {...register("flightNumber")} className="h-12 bg-gray-50 border-gray-200 rounded-xl text-sm" />
+                              </div>
+                              <div className="col-span-3">
+                                <label className="block text-xs font-semibold text-gray-600 mb-2">Terminal</label>
+                                <Input placeholder="e.g. Tom Bradley / Terminal 4" {...register("terminal")} className="h-12 bg-gray-50 border-gray-200 rounded-xl text-sm" />
+                              </div>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Passengers & Luggage */}
+                        <div className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm">
+                          <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-4">Passengers & Luggage</p>
+                          <div className="space-y-3">
+                            <Counter
+                              label={<span className="flex items-center gap-2 text-sm font-medium text-gray-700"><Users className="w-4 h-4 text-gray-400" />Passengers</span>}
+                              value={values.passengers}
+                              onChange={v => setValue("passengers", v)}
+                              min={1}
+                              max={14}
+                            />
+                            <Counter
+                              label={<span className="flex items-center gap-2 text-sm font-medium text-gray-700"><Luggage className="w-4 h-4 text-gray-400" />Bags</span>}
+                              value={values.luggage}
+                              onChange={v => setValue("luggage", v)}
+                              min={0}
+                              max={10}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </StepPanel>
+                  )}
+
+                  {/* ═══ STEP 3 — Vehicle ═══ */}
+                  {step === 3 && (
+                    <StepPanel stepKey={3}>
+                      <div className="mb-5">
+                        <h1 className="text-xl font-bold text-gray-900">Choose your vehicle</h1>
+                        <p className="text-gray-400 text-sm mt-1">All vehicles are fully insured and professionally chauffeured.</p>
+                      </div>
+
+                      <div className="space-y-3">
+                        {vehicles.map(v => {
+                          const selected = values.vehicleId === v.id;
+                          const price = isHourly
+                            ? `$${v.hourlyRate}/hr · $${v.hourlyRate * (values.duration || 3)} total`
+                            : `$${v.flatRate} flat rate`;
+                          return (
+                            <button
+                              key={v.id}
+                              type="button"
+                              onClick={() => setValue("vehicleId", v.id)}
+                              className={`w-full text-left rounded-2xl border-2 bg-white overflow-hidden transition-all touch-manipulation active:scale-[0.99]
+                                ${selected ? "border-[#1A1A1A] shadow-lg" : "border-gray-100 hover:border-gray-300 hover:shadow-md"}`}
+                            >
+                              <div className="flex flex-col sm:flex-row">
+                                <div className="sm:w-40 h-36 sm:h-auto shrink-0 overflow-hidden bg-gray-50 relative">
+                                  <img src={v.image} alt={v.name} className="w-full h-full object-cover" />
+                                  {selected && (
+                                    <div className="absolute inset-0 bg-[#1A1A1A]/10 flex items-center justify-center">
+                                      <div className="w-9 h-9 bg-[#1A1A1A] rounded-full flex items-center justify-center shadow-lg">
+                                        <Check className="w-5 h-5 text-white" strokeWidth={2.5} />
+                                      </div>
+                                    </div>
+                                  )}
+                                </div>
+                                <div className="flex-1 p-4 flex flex-col justify-between min-w-0">
+                                  <div className="flex items-start justify-between gap-3">
+                                    <div>
+                                      <span className={`inline-block text-[10px] font-bold uppercase tracking-widest px-2.5 py-0.5 rounded-full mb-2
+                                        ${selected ? "bg-[#1A1A1A] text-white" : "bg-gray-100 text-gray-500"}`}>
+                                        {v.category}
+                                      </span>
+                                      <h3 className="font-bold text-gray-900 text-base leading-tight">{v.name}</h3>
+                                      <p className="text-xs text-gray-400 mt-0.5">{v.model}</p>
+                                    </div>
+                                    <div className="text-right shrink-0">
+                                      <p className={`text-xl font-bold ${selected ? "text-[#1A1A1A]" : "text-gray-800"}`}>
+                                        ${isHourly ? v.hourlyRate : v.flatRate}
+                                      </p>
+                                      <p className="text-xs text-gray-400">{isHourly ? "per hour" : "base rate"}</p>
+                                    </div>
+                                  </div>
+                                  <div className="flex items-center gap-4 mt-3 text-xs text-gray-500">
+                                    <span className="flex items-center gap-1.5"><Users className="w-3.5 h-3.5" />Up to {v.pax} pax</span>
+                                    <span className="flex items-center gap-1.5"><Luggage className="w-3.5 h-3.5" />{v.bags} bags</span>
+                                    <span className="flex items-center gap-1.5"><Wifi className="w-3.5 h-3.5" />Wi-Fi</span>
+                                  </div>
+                                  <div className="flex flex-wrap gap-1.5 mt-3">
+                                    {v.amenities.map(a => (
+                                      <span key={a} className="text-[10px] bg-gray-50 border border-gray-100 rounded-full px-2.5 py-0.5 text-gray-600">{a}</span>
+                                    ))}
+                                  </div>
+                                  <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-50">
+                                    <span className="text-sm font-semibold text-gray-700">{price}</span>
+                                    {selected && (
+                                      <span className="flex items-center gap-1.5 text-xs font-bold text-[#1A1A1A]">
+                                        <Check className="w-3.5 h-3.5" /> Selected
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                            </button>
+                          );
+                        })}
+                      </div>
+
+                      {!values.vehicleId && (
+                        <p className="text-center text-sm text-red-500 mt-4 font-medium">Please select a vehicle to continue.</p>
+                      )}
+
+                      {/* Add-ons */}
+                      <div className="mt-4 bg-white rounded-2xl border border-gray-100 p-5 shadow-sm">
+                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-4">Add-ons</p>
+                        <div className="divide-y divide-gray-50">
+                          {addons.map(addon => {
+                            const key = addon.id as keyof BookingFormValues;
+                            const checked = !!values[key];
+                            return (
+                              <div
+                                key={addon.id}
+                                className={`flex items-center justify-between py-4 cursor-pointer group touch-manipulation ${addon.included ? "opacity-70" : ""}`}
+                                onClick={() => !addon.included && setValue(key, !checked as any)}
+                              >
+                                <div className="flex items-center gap-3">
+                                  <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all shrink-0
+                                    ${checked ? "bg-[#1A1A1A] border-[#1A1A1A]" : "border-gray-200 group-hover:border-gray-400"}`}>
+                                    {checked && <Check className="w-3 h-3 text-white" strokeWidth={3} />}
+                                  </div>
+                                  <div>
+                                    <p className="text-sm font-semibold text-gray-800">{addon.label}</p>
+                                    <p className="text-xs text-gray-400">{addon.desc}</p>
+                                  </div>
+                                </div>
+                                <span className={`text-sm font-bold shrink-0 ml-4 ${addon.included ? "text-green-600" : "text-gray-700"}`}>
+                                  {addon.included ? "Included" : `+$${addon.price}`}
+                                </span>
+                              </div>
+                            );
+                          })}
+                          <div className="flex items-center justify-between py-4">
+                            <div>
+                              <p className="text-sm font-semibold text-gray-800">Extra Stops</p>
+                              <p className="text-xs text-gray-400">$15 per additional stop</p>
+                            </div>
+                            <div className="flex items-center gap-2 ml-4">
+                              <button type="button" onClick={() => setValue("extraStops", Math.max(0, (values.extraStops || 0) - 1))}
+                                className="w-8 h-8 rounded-full border-2 border-gray-200 flex items-center justify-center hover:border-gray-400 text-gray-600 touch-manipulation active:scale-90">
+                                <Minus className="w-3.5 h-3.5" />
+                              </button>
+                              <span className="w-5 text-center text-sm font-bold">{values.extraStops || 0}</span>
+                              <button type="button" onClick={() => setValue("extraStops", Math.min(5, (values.extraStops || 0) + 1))}
+                                className="w-8 h-8 rounded-full border-2 border-gray-200 flex items-center justify-center hover:border-gray-400 text-gray-600 touch-manipulation active:scale-90">
+                                <Plus className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </StepPanel>
+                  )}
+
+                  {/* ═══ STEP 4 — Your Info ═══ */}
+                  {step === 4 && (
+                    <StepPanel stepKey={4}>
+                      <div className="mb-5">
+                        <h1 className="text-xl font-bold text-gray-900">Your information</h1>
+                        <p className="text-gray-400 text-sm mt-1">We'll send your confirmation here and share it with your chauffeur.</p>
+                      </div>
+
+                      <div className="space-y-3">
+                        <div className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm space-y-4">
+                          <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Contact Information</p>
+                          <div>
+                            <label className="block text-xs font-semibold text-gray-600 mb-2">Full Name</label>
+                            <Input
+                              placeholder="Your full name"
+                              {...register("passengerName")}
+                              className={`h-12 bg-gray-50 border-gray-200 rounded-xl ${errors.passengerName ? "border-red-400" : ""}`}
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs font-semibold text-gray-600 mb-2">Email Address</label>
+                            <Input
+                              type="email"
+                              placeholder="you@example.com"
+                              {...register("passengerEmail")}
+                              className={`h-12 bg-gray-50 border-gray-200 rounded-xl ${errors.passengerEmail ? "border-red-400" : ""}`}
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs font-semibold text-gray-600 mb-2">Phone Number</label>
+                            <Input
+                              type="tel"
+                              placeholder="+1 (555) 000-0000"
+                              {...register("passengerPhone")}
+                              className={`h-12 bg-gray-50 border-gray-200 rounded-xl ${errors.passengerPhone ? "border-red-400" : ""}`}
+                            />
+                          </div>
+                        </div>
+
+                        <div className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm">
+                          <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3">
+                            Special Instructions <span className="text-gray-300 font-normal normal-case">(optional)</span>
+                          </label>
+                          <Textarea
+                            placeholder="Child seat location, preferred route, accessibility needs, arrival sign name..."
+                            {...register("specialInstructions")}
+                            className="bg-gray-50 border-gray-200 rounded-xl resize-none text-sm min-h-[88px]"
+                            rows={3}
+                          />
+                        </div>
+
+                        {/* Booking summary */}
+                        <div className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm">
+                          <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-4">Trip Summary</p>
+                          <div className="space-y-2.5 text-sm">
+                            <div className="flex justify-between"><span className="text-gray-500">Service</span><span className="font-semibold text-right">{values.tripType}</span></div>
+                            <div className="flex justify-between"><span className="text-gray-500">Date & Time</span><span className="font-semibold text-right">{values.pickupDate} · {values.pickupTime}</span></div>
+                            <div className="flex justify-between"><span className="text-gray-500">Pickup</span><span className="font-semibold text-right max-w-[60%] truncate">{values.pickupLocation || "—"}</span></div>
+                            {!isHourly && values.dropoffLocation && (
+                              <div className="flex justify-between"><span className="text-gray-500">Drop-off</span><span className="font-semibold text-right max-w-[60%] truncate">{values.dropoffLocation}</span></div>
+                            )}
+                            <div className="flex justify-between"><span className="text-gray-500">Vehicle</span><span className="font-semibold">{vehicle?.name || "—"}</span></div>
+                            <div className="flex justify-between"><span className="text-gray-500">Passengers</span><span className="font-semibold">{values.passengers}</span></div>
+                          </div>
+                          {totalEstimate > 0 && (
+                            <div className="mt-4 pt-4 border-t border-gray-100 space-y-2 text-sm">
+                              {baseRate > 0 && <div className="flex justify-between text-gray-500"><span>Base rate</span><span>${baseRate}</span></div>}
+                              {addonsTotal > 0 && <div className="flex justify-between text-gray-500"><span>Add-ons</span><span>+${addonsTotal}</span></div>}
+                              {gratuity > 0 && <div className="flex justify-between text-gray-500"><span>Gratuity (20%)</span><span>+${gratuity}</span></div>}
+                              <div className="flex justify-between font-bold text-base pt-2 border-t border-gray-100">
+                                <span>Total Estimate</span><span>${totalEstimate}</span>
+                              </div>
+                            </div>
+                          )}
+                          <div className="mt-4 flex items-start gap-2.5 text-xs text-gray-400 bg-gray-50 rounded-xl p-3">
+                            <Shield className="w-3.5 h-3.5 mt-0.5 shrink-0" />
+                            <span>No charge until your ride is confirmed. Final price agreed before billing.</span>
+                          </div>
+                        </div>
+                      </div>
+                    </StepPanel>
+                  )}
+
+                  {/* ═══ STEP 5 — Payment (Zelle) ═══ */}
+                  {step === 5 && (
+                    <StepPanel stepKey={5}>
+                      <div className="mb-5">
+                        <h1 className="text-xl font-bold text-gray-900">Payment</h1>
+                        <p className="text-gray-400 text-sm mt-1">We accept Zelle for quick and secure payment.</p>
+                      </div>
+
+                      <div className="space-y-4">
+                        {/* Zelle card */}
+                        <div className="bg-white rounded-2xl border-2 border-[#6B11D0]/20 shadow-sm overflow-hidden">
+                          {/* Header */}
+                          <div className="bg-gradient-to-br from-[#6B11D0] to-[#8B31F0] p-5 text-white">
+                            <div className="flex items-center gap-3 mb-1">
+                              <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
+                                <Zap className="w-5 h-5 text-white" />
+                              </div>
+                              <div>
+                                <p className="font-bold text-lg leading-tight">Zelle</p>
+                                <p className="text-white/70 text-xs">Instant bank-to-bank transfer</p>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Body */}
+                          <div className="p-5 space-y-4">
+                            <div>
+                              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3">Send Payment To</p>
+                              <div className="bg-gray-50 rounded-xl p-4 flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                  <div className="w-10 h-10 bg-[#6B11D0]/10 rounded-xl flex items-center justify-center">
+                                    <Smartphone className="w-5 h-5 text-[#6B11D0]" />
+                                  </div>
+                                  <div>
+                                    <p className="text-xs text-gray-500 font-medium">Phone number</p>
+                                    <p className="text-lg font-bold text-gray-900 tracking-wide">{ZELLE_PHONE}</p>
+                                  </div>
+                                </div>
+                                <ZelleCopy text={ZELLE_PHONE} />
+                              </div>
+                            </div>
+
+                            {totalEstimate > 0 && (
+                              <div>
+                                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3">Amount to Send</p>
+                                <div className="bg-gray-50 rounded-xl p-4 flex items-center justify-between">
+                                  <div className="flex items-center gap-3">
+                                    <div className="w-10 h-10 bg-green-50 rounded-xl flex items-center justify-center">
+                                      <CreditCard className="w-5 h-5 text-green-600" />
+                                    </div>
+                                    <div>
+                                      <p className="text-xs text-gray-500 font-medium">Total estimate</p>
+                                      <p className="text-2xl font-bold text-gray-900">${totalEstimate}</p>
+                                    </div>
+                                  </div>
+                                  <ZelleCopy text={`${totalEstimate}`} />
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Price breakdown */}
+                            {totalEstimate > 0 && (
+                              <div className="border border-gray-100 rounded-xl p-4 text-sm space-y-2">
+                                {baseRate > 0 && (
+                                  <div className="flex justify-between text-gray-500">
+                                    <span>Base rate</span><span>${baseRate}</span>
+                                  </div>
+                                )}
+                                {addonsTotal > 0 && (
+                                  <div className="flex justify-between text-gray-500">
+                                    <span>Add-ons</span><span>+${addonsTotal}</span>
+                                  </div>
+                                )}
+                                {gratuity > 0 && (
+                                  <div className="flex justify-between text-gray-500">
+                                    <span>Gratuity (20%)</span><span>+${gratuity}</span>
+                                  </div>
+                                )}
+                                <div className="flex justify-between font-bold text-base border-t border-gray-100 pt-2 mt-2">
+                                  <span>Total</span><span className="text-[#6B11D0]">${totalEstimate}</span>
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Instructions */}
+                            <div className="bg-amber-50 border border-amber-100 rounded-xl p-4 space-y-2">
+                              <div className="flex items-center gap-2 text-amber-800 font-semibold text-sm">
+                                <Info className="w-4 h-4 shrink-0" />
+                                Payment Instructions
+                              </div>
+                              <ol className="text-xs text-amber-700 space-y-1.5 pl-1 list-decimal list-inside">
+                                <li>Open your Zelle app or bank app</li>
+                                <li>Send to <strong>{ZELLE_PHONE}</strong></li>
+                                <li>Enter the amount: <strong>${totalEstimate > 0 ? `$${totalEstimate}` : "the quoted amount"}</strong></li>
+                                <li>Add your name in the memo so we can match your payment</li>
+                                <li>Click "Confirm Booking" — we'll confirm once payment is received</li>
+                              </ol>
+                            </div>
+
+                            {/* Trust */}
+                            <div className="flex items-start gap-2 text-xs text-gray-400">
+                              <Shield className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+                              <span>Your booking is confirmed upon payment receipt. Our team will reach out within 15 minutes.</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Mini trip summary */}
+                        <div className="bg-white rounded-2xl border border-gray-100 p-4 shadow-sm">
+                          <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3">Booking for</p>
+                          <div className="flex items-center gap-3">
+                            {vehicle && (
+                              <div className="w-16 h-12 rounded-xl overflow-hidden shrink-0">
+                                <img src={vehicle.image} alt={vehicle.name} className="w-full h-full object-cover" />
+                              </div>
+                            )}
+                            <div className="min-w-0">
+                              <p className="font-semibold text-gray-900 text-sm truncate">{values.passengerName || "Guest"}</p>
+                              <p className="text-xs text-gray-400 truncate">{values.tripType} · {vehicle?.name}</p>
+                              <p className="text-xs text-gray-400">{values.pickupDate} at {values.pickupTime}</p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </StepPanel>
+                  )}
+
+                </AnimatePresence>
+
+                {/* ─── Desktop nav buttons ─── */}
+                <div className="hidden lg:flex items-center justify-between mt-8 gap-4">
+                  {step > 1 ? (
+                    <button
+                      type="button"
+                      onClick={handleBack}
+                      className="flex items-center gap-2 text-sm font-semibold text-gray-500 hover:text-gray-900 transition-colors px-4 py-2.5 rounded-xl hover:bg-gray-100"
+                    >
+                      <ChevronLeft className="w-4 h-4" /> Back
+                    </button>
+                  ) : <div />}
+
+                  {step < STEPS.length ? (
+                    <button
+                      type="button"
+                      onClick={handleNext}
+                      className="flex items-center gap-2 h-12 bg-[#1A1A1A] text-white px-8 rounded-xl text-sm font-bold hover:bg-gray-800 active:scale-95 transition-all shadow-sm"
+                    >
+                      Continue <ChevronRight className="w-4 h-4" />
+                    </button>
+                  ) : (
+                    <button
+                      type="submit"
+                      disabled={createBooking.isPending}
+                      className="flex items-center gap-2 h-12 bg-[#1A1A1A] text-white px-8 rounded-xl text-sm font-bold hover:bg-gray-800 active:scale-95 transition-all shadow-sm disabled:opacity-60"
+                    >
+                      {createBooking.isPending ? (
+                        <><Loader2 className="w-4 h-4 animate-spin" /> Sending…</>
+                      ) : (
+                        <><CheckCircle2 className="w-4 h-4" /> Confirm Booking</>
+                      )}
+                    </button>
+                  )}
+                </div>
+              </form>
+            </div>
+
+            {/* ─── RIGHT SUMMARY PANEL (desktop) ─── */}
+            <div className="hidden lg:block w-72 shrink-0">
+              <div className="sticky top-24 space-y-4">
+                {/* Trip card */}
+                <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+                  <div className="bg-[#1A1A1A] text-white p-4">
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-white/50 mb-1">Your Trip</p>
+                    <p className="font-bold">{tripType}</p>
+                  </div>
+                  <div className="p-4 space-y-3 text-sm">
+                    {values.pickupDate && (
+                      <div className="flex items-center gap-2.5 text-gray-600">
+                        <Calendar className="w-4 h-4 text-gray-400 shrink-0" />
+                        <span>{values.pickupDate}{values.pickupTime ? ` · ${values.pickupTime}` : ""}</span>
+                      </div>
+                    )}
+                    {values.pickupLocation && (
+                      <div className="flex items-start gap-2.5 text-gray-600">
+                        <MapPin className="w-4 h-4 text-gray-400 shrink-0 mt-0.5" />
+                        <span className="break-words">{values.pickupLocation}</span>
+                      </div>
+                    )}
+                    {!isHourly && values.dropoffLocation && (
+                      <>
+                        <div className="flex justify-center"><div className="w-px h-4 bg-gray-100" /></div>
+                        <div className="flex items-start gap-2.5 text-gray-600">
+                          <MapPin className="w-4 h-4 text-gray-400 shrink-0 mt-0.5" />
+                          <span className="break-words">{values.dropoffLocation}</span>
+                        </div>
+                      </>
+                    )}
+                    {isHourly && (
+                      <div className="flex items-center gap-2.5 text-gray-600">
+                        <Clock className="w-4 h-4 text-gray-400 shrink-0" />
+                        <span>{values.duration || 3} hours as directed</span>
+                      </div>
+                    )}
+                    <div className="flex items-center gap-2.5 text-gray-600">
+                      <Users className="w-4 h-4 text-gray-400 shrink-0" />
+                      <span>{values.passengers} passenger{values.passengers !== 1 ? "s" : ""} · {values.luggage} bag{values.luggage !== 1 ? "s" : ""}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Vehicle card */}
+                {vehicle && (
+                  <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+                    <div className="h-28 overflow-hidden">
+                      <img src={vehicle.image} alt={vehicle.name} className="w-full h-full object-cover" />
+                    </div>
+                    <div className="p-4">
+                      <p className="font-bold text-sm text-gray-900">{vehicle.name}</p>
+                      <p className="text-xs text-gray-400 mt-0.5">{vehicle.model}</p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Price breakdown */}
+                {totalEstimate > 0 && (
+                  <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-3">Price Estimate</p>
+                    <div className="space-y-2 text-sm">
+                      <div className="flex justify-between text-gray-600"><span>Base rate</span><span>${baseRate}</span></div>
+                      {addonsTotal > 0 && <div className="flex justify-between text-gray-600"><span>Add-ons</span><span>+${addonsTotal}</span></div>}
+                      {gratuity > 0 && <div className="flex justify-between text-gray-600"><span>Gratuity (20%)</span><span>+${gratuity}</span></div>}
+                      <div className="flex justify-between font-bold text-base pt-2 border-t border-gray-100 mt-2">
+                        <span>Total</span><span>${totalEstimate}</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Zelle teaser (shown from step 2 onward when there's a price) */}
+                {step >= 2 && totalEstimate > 0 && (
+                  <div className="bg-[#6B11D0]/5 border border-[#6B11D0]/15 rounded-2xl p-4">
+                    <div className="flex items-center gap-2.5 mb-2">
+                      <Zap className="w-4 h-4 text-[#6B11D0]" />
+                      <p className="text-xs font-bold text-[#6B11D0] uppercase tracking-wide">Payment via Zelle</p>
+                    </div>
+                    <p className="text-xs text-gray-500">Send <strong className="text-gray-700">${totalEstimate}</strong> to <strong className="text-gray-700">{ZELLE_PHONE}</strong> after confirming.</p>
+                  </div>
+                )}
+
+                {/* Trust badges */}
+                <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 space-y-2.5">
+                  {[
+                    { icon: Shield, text: "No charge until confirmed" },
+                    { icon: Star,   text: "5-star rated chauffeurs" },
+                    { icon: Phone,  text: "24/7 dispatch support" },
+                  ].map(({ icon: Icon, text }) => (
+                    <div key={text} className="flex items-center gap-2.5 text-xs text-gray-500">
+                      <Icon className="w-3.5 h-3.5 text-gray-400 shrink-0" />
+                      {text}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ─── Mobile sticky bottom bar ─── */}
+      <div className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-gray-100 shadow-[0_-8px_30px_rgb(0,0,0,0.08)] px-4 py-3 safe-area-bottom">
+        <div className="flex items-center justify-between max-w-sm mx-auto gap-4">
+          <div className="flex items-center gap-3">
+            {step > 1 && (
+              <button
+                type="button"
+                onClick={handleBack}
+                className="w-10 h-10 rounded-xl border-2 border-gray-200 flex items-center justify-center active:scale-90 transition-all touch-manipulation"
+              >
+                <ChevronLeft className="w-4 h-4 text-gray-600" />
+              </button>
+            )}
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400">
+                {totalEstimate > 0 ? "Estimate" : STEPS[step - 1]}
+              </p>
+              <p className="text-lg font-bold text-gray-900">
+                {totalEstimate > 0 ? `$${totalEstimate}` : `Step ${step} of ${STEPS.length}`}
+              </p>
+            </div>
+          </div>
+
+          {step < STEPS.length ? (
+            <button
+              type="button"
+              onClick={handleNext}
+              className="flex items-center gap-1.5 h-12 bg-[#1A1A1A] text-white px-7 rounded-xl text-sm font-bold shrink-0 active:scale-95 touch-manipulation"
+            >
+              Continue <ChevronRight className="w-4 h-4" />
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={handleSubmit(onSubmit)}
+              disabled={createBooking.isPending}
+              className="flex items-center gap-1.5 h-12 bg-[#1A1A1A] text-white px-7 rounded-xl text-sm font-bold shrink-0 disabled:opacity-60 active:scale-95 touch-manipulation"
+            >
+              {createBooking.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <><CheckCircle2 className="w-4 h-4" /> Confirm</>}
+            </button>
+          )}
+        </div>
+      </div>
+    </Layout>
+  );
+}
