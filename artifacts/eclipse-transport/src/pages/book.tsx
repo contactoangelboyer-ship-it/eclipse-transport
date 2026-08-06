@@ -29,25 +29,25 @@ import eclipseLogoTransparent from "@assets/eclipse-logo-new-transparent.png";
 const vehicles = [
   {
     id: "suburban", name: "Chevrolet Suburban", model: "2025 Suburban S",
-    category: "SUV", pax: 7, bags: 6, ratePerMile: 6.20, hourlyRate: 80,
+    category: "SUV", pax: 7, bags: 6, ratePerMile: 6.20, hourlyRate: 80, minimumFare: 90,
     image: suburbanImg,
     amenities: ["High-speed Wi-Fi", "Privacy glass", "Climate control", "Bottled water"],
   },
   {
     id: "escalade", name: "Cadillac Escalade ESV", model: "2024 Escalade ESV",
-    category: "SUV", pax: 7, bags: 6, ratePerMile: 7.15, hourlyRate: 95,
+    category: "SUV", pax: 7, bags: 6, ratePerMile: 7.15, hourlyRate: 95, minimumFare: 100,
     image: escaladeImg,
     amenities: ["Panoramic sunroof", "Premium audio", "Heated seats", "Privacy glass"],
   },
   {
     id: "lincoln", name: "Lincoln Continental", model: "2024 Continental",
-    category: "Sedan", pax: 3, bags: 3, ratePerMile: 5.60, hourlyRate: 65,
+    category: "Sedan", pax: 3, bags: 3, ratePerMile: 5.60, hourlyRate: 65, minimumFare: 80,
     image: lincolnImg,
     amenities: ["Executive rear seating", "Noise cancellation", "Rear climate control"],
   },
   {
     id: "mercedes", name: "Mercedes-Benz S-Class", model: "2024 S-Class",
-    category: "Sedan", pax: 3, bags: 3, ratePerMile: 5.60, hourlyRate: 75,
+    category: "Sedan", pax: 3, bags: 3, ratePerMile: 5.60, hourlyRate: 75, minimumFare: 80,
     image: mercedesImg,
     amenities: ["Ambient lighting", "Massaging seats", "Burmester audio", "Rear screens"],
   },
@@ -252,10 +252,19 @@ export default function Book() {
 
   /* ── price ── */
   let baseRate = 0;
+  let minimumApplied = false;
   if (vehicle) {
-    baseRate = isHourly
-      ? vehicle.hourlyRate * (values.duration || 3)
-      : vehicle.ratePerMile * 10; /* default 10-mile estimate until distance is known */
+    if (isHourly) {
+      baseRate = vehicle.hourlyRate * (values.duration || 3);
+    } else {
+      const mileRate = vehicle.ratePerMile * 10; /* default 10-mile estimate */
+      if (mileRate < vehicle.minimumFare) {
+        baseRate = vehicle.minimumFare;
+        minimumApplied = true;
+      } else {
+        baseRate = mileRate;
+      }
+    }
   }
   const addonsTotal =
     (values.addonMeetGreet  ? 25 : 0) +
@@ -639,7 +648,7 @@ export default function Book() {
                           const selected = values.vehicleId === v.id;
                           const price = isHourly
                             ? `$${v.hourlyRate}/hr · $${v.hourlyRate * (values.duration || 3)} total`
-                            : `$${v.ratePerMile.toFixed(2)}/mile`;
+                            : `$${v.ratePerMile.toFixed(2)}/mile · min $${v.minimumFare}`;
                           return (
                             <button
                               key={v.id}
@@ -822,7 +831,12 @@ export default function Book() {
                           </div>
                           {totalEstimate > 0 && (
                             <div className="mt-4 pt-4 border-t border-gray-100 space-y-2 text-sm">
-                              {baseRate > 0 && <div className="flex justify-between text-gray-500"><span>Rate (per mile)</span><span>${baseRate}</span></div>}
+                              {baseRate > 0 && (
+                <div className="flex justify-between text-gray-500">
+                  <span>{minimumApplied ? "Minimum fare" : "Rate (per mile)"}</span>
+                  <span>${baseRate}{minimumApplied && <span className="ml-1 text-[10px] font-bold text-amber-600 uppercase tracking-wide"> MIN</span>}</span>
+                </div>
+              )}
                               {addonsTotal > 0 && <div className="flex justify-between text-gray-500"><span>Add-ons</span><span>+${addonsTotal}</span></div>}
                               {gratuity > 0 && <div className="flex justify-between text-gray-500"><span>Gratuity (20%)</span><span>+${gratuity}</span></div>}
                               <div className="flex justify-between font-bold text-base pt-2 border-t border-gray-100">
@@ -856,7 +870,10 @@ export default function Book() {
                               <span className="text-2xl font-bold text-gray-900">${totalEstimate}</span>
                             </div>
                             <div className="mt-3 pt-3 border-t border-gray-100 space-y-1 text-xs text-gray-500">
-                              <div className="flex justify-between"><span>Rate (per mile)</span><span>${baseRate}</span></div>
+                              <div className="flex justify-between">
+                                <span>{minimumApplied ? "Minimum fare" : "Rate (per mile)"}</span>
+                                <span>${baseRate}{minimumApplied && <span className="ml-1 text-[10px] font-bold text-amber-600"> MIN</span>}</span>
+                              </div>
                               {addonsTotal > 0 && <div className="flex justify-between"><span>Add-ons</span><span>+${addonsTotal}</span></div>}
                               {gratuity > 0 && <div className="flex justify-between"><span>Gratuity (20%)</span><span>+${gratuity}</span></div>}
                             </div>
@@ -1003,7 +1020,10 @@ export default function Book() {
                   <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
                     <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-3">Price Estimate</p>
                     <div className="space-y-2 text-sm">
-                      <div className="flex justify-between text-gray-600"><span>Rate (per mile)</span><span>${baseRate}</span></div>
+                      <div className="flex justify-between text-gray-600">
+                        <span>{minimumApplied ? "Minimum fare" : "Rate (per mile)"}</span>
+                        <span>${baseRate}{minimumApplied && <span className="ml-1 text-[10px] font-bold text-amber-600"> MIN</span>}</span>
+                      </div>
                       {addonsTotal > 0 && <div className="flex justify-between text-gray-600"><span>Add-ons</span><span>+${addonsTotal}</span></div>}
                       {gratuity > 0 && <div className="flex justify-between text-gray-600"><span>Gratuity (20%)</span><span>+${gratuity}</span></div>}
                       <div className="flex justify-between font-bold text-base pt-2 border-t border-gray-100 mt-2">

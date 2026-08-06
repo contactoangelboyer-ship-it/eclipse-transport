@@ -19,6 +19,7 @@ const vehicles = [
     capacity: 7,
     luggage: "6 bags",
     ratePerMile: "$6.20",
+    minimumFare: "$90",
     hasWifi: true,
     hasPrivacy: true,
     hasChildSeat: true,
@@ -36,6 +37,7 @@ const vehicles = [
     capacity: 7,
     luggage: "6 bags",
     ratePerMile: "$7.15",
+    minimumFare: "$100",
     hasWifi: true,
     hasPrivacy: true,
     hasChildSeat: true,
@@ -53,6 +55,7 @@ const vehicles = [
     capacity: 3,
     luggage: "3 bags",
     ratePerMile: "$5.60",
+    minimumFare: "$80",
     hasWifi: true,
     hasPrivacy: true,
     hasChildSeat: false,
@@ -70,6 +73,7 @@ const vehicles = [
     capacity: 3,
     luggage: "3 bags",
     ratePerMile: "$5.60",
+    minimumFare: "$80",
     hasWifi: true,
     hasPrivacy: true,
     hasChildSeat: false,
@@ -193,6 +197,13 @@ export default function Fleet() {
                     <td className="p-6">$5.60/mile</td>
                     <td className="p-6">$5.60/mile</td>
                   </tr>
+                  <tr className="bg-[#FCFBF8]/50 border-b border-black/5 hover:bg-black/[0.02] transition-colors">
+                    <td className="p-6 text-[10px] uppercase tracking-[0.15em] font-bold text-[#1A1A1A]/60">Minimum Fare</td>
+                    <td className="p-6">$90</td>
+                    <td className="p-6">$100</td>
+                    <td className="p-6">$80</td>
+                    <td className="p-6">$80</td>
+                  </tr>
                   <tr className="border-b border-black/5 hover:bg-black/[0.02] transition-colors">
                     <td className="p-6 text-[10px] uppercase tracking-[0.15em] font-bold text-[#1A1A1A]/60">Wi-Fi</td>
                     <td className="p-6 text-green-600"><CheckCircle2 className="w-5 h-5" /></td>
@@ -273,6 +284,7 @@ function VehicleCard({ vehicle, index }: { vehicle: any, index: number }) {
             <div>
               <p className="font-bold text-[#1A1A1A] text-[10px] uppercase tracking-[0.15em]">Rate Per Mile</p>
               <p className="text-sm text-[#1A1A1A]/60 mt-1">{vehicle.ratePerMile}/mile</p>
+              <p className="text-[10px] text-[#1A1A1A]/40 mt-0.5">Min. {vehicle.minimumFare}</p>
             </div>
           </div>
         </div>
