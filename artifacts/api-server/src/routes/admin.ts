@@ -1,7 +1,7 @@
 import { Router, type IRouter, type RequestHandler } from "express";
 import { createHash } from "crypto";
 import { eq, sql } from "drizzle-orm";
-import { db, fleetTable, servicesTable, zonesTable, contactsTable, bookingsTable } from "@workspace/db";
+import { db, fleetTable, servicesTable, zonesTable, contactsTable, bookingsTable, pricingConfigTable } from "@workspace/db";
 import {
   AdminLoginBody,
   AdminLoginResponse,
@@ -287,6 +287,51 @@ router.get("/admin/analytics", adminAuth, async (req, res): Promise<void> => {
       })),
     })
   );
+});
+
+/* ── Pricing Config (singleton, id=1) ── */
+
+const PRICING_DEFAULTS = {
+  baseRatePerMile: 3.5,
+  minimumFare: 75,
+  baseFare: 0,
+  hourlyRate: 95,
+  minimumHours: 2,
+  airportPickupFlat: 0,
+  airportDropoffFlat: 0,
+  fuelSurcharge: 0,
+  gratuityDefault: 20,
+  nightSurcharge: 0,
+  holidaySurcharge: 0,
+  waitTimeRate: 25,
+  waitTimeFreeMinutes: 15,
+  additionalStopFee: 15,
+};
+
+router.get("/admin/pricing", adminAuth, async (req, res): Promise<void> => {
+  let [cfg] = await db.select().from(pricingConfigTable).where(eq(pricingConfigTable.id, 1));
+  if (!cfg) {
+    // Seed defaults on first access
+    [cfg] = await db.insert(pricingConfigTable).values({ ...PRICING_DEFAULTS }).returning();
+  }
+  res.json(cfg);
+});
+
+router.put("/admin/pricing", adminAuth, async (req, res): Promise<void> => {
+  const body = req.body as Record<string, number>;
+  const allowed = Object.keys(PRICING_DEFAULTS) as (keyof typeof PRICING_DEFAULTS)[];
+  const data: Partial<typeof pricingConfigTable.$inferInsert> = {};
+  for (const key of allowed) {
+    if (body[key] !== undefined && !isNaN(Number(body[key]))) {
+      (data as Record<string, number>)[key] = Number(body[key]);
+    }
+  }
+  // Upsert: try update first, insert if missing
+  let [cfg] = await db.update(pricingConfigTable).set({ ...data, updatedAt: new Date() }).where(eq(pricingConfigTable.id, 1)).returning();
+  if (!cfg) {
+    [cfg] = await db.insert(pricingConfigTable).values({ ...PRICING_DEFAULTS, ...data }).returning();
+  }
+  res.json(cfg);
 });
 
 export default router;

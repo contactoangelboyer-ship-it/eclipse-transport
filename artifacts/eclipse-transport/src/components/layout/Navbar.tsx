@@ -59,7 +59,7 @@ export function Navbar({ hideLogo = false }: NavbarProps) {
                 <img
                   src={eclipseLogoBranded}
                   alt="Eclipse Transport"
-                  className="h-[3.5rem] md:h-[4rem] w-auto object-contain transition-all duration-300 group-hover:scale-105"
+                  className="h-[5rem] md:h-[6rem] w-auto object-contain transition-all duration-300 group-hover:scale-105"
                 />
               )}
             </Link>
@@ -193,7 +193,7 @@ export function Navbar({ hideLogo = false }: NavbarProps) {
             >
               {/* Header row */}
               <div className="flex items-center justify-between px-6 pt-6 pb-2">
-                <img src={eclipseLogoBranded} alt="Eclipse Transport" className="h-14 w-auto object-contain" />
+                <img src={eclipseLogoBranded} alt="Eclipse Transport" className="h-20 w-auto object-contain" />
                 <button
                   onClick={() => setMobileMenuOpen(false)}
                   className="p-2 text-white/60 hover:text-white transition-colors"

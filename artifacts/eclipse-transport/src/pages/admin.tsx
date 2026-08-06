@@ -33,7 +33,7 @@ import {
   getAdminGetAnalyticsQueryKey
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
-import { isAdminAuthenticated, clearAdminToken } from "@/lib/admin-auth";
+import { isAdminAuthenticated, clearAdminToken, getAdminToken } from "@/lib/admin-auth";
 import {
   LogOut, Car, ClipboardList, MapPin, Settings, Plus, Pencil, Trash2,
   CheckCircle, XCircle, Clock, Menu, LayoutDashboard, BarChart3,
@@ -1529,9 +1529,190 @@ function SettingsTab() {
 }
 
 /* ─────────────────────────────────────────────────────────────
+   PRICING TAB
+───────────────────────────────────────────────────────────── */
+type PricingData = {
+  baseRatePerMile: number;
+  minimumFare: number;
+  baseFare: number;
+  hourlyRate: number;
+  minimumHours: number;
+  airportPickupFlat: number;
+  airportDropoffFlat: number;
+  fuelSurcharge: number;
+  gratuityDefault: number;
+  nightSurcharge: number;
+  holidaySurcharge: number;
+  waitTimeRate: number;
+  waitTimeFreeMinutes: number;
+  additionalStopFee: number;
+};
+
+const PRICING_DEFAULTS: PricingData = {
+  baseRatePerMile: 3.5, minimumFare: 75, baseFare: 0,
+  hourlyRate: 95, minimumHours: 2,
+  airportPickupFlat: 0, airportDropoffFlat: 0,
+  fuelSurcharge: 0, gratuityDefault: 20, nightSurcharge: 0, holidaySurcharge: 0,
+  waitTimeRate: 25, waitTimeFreeMinutes: 15,
+  additionalStopFee: 15,
+};
+
+function PricingTab() {
+  const [form, setForm] = useState<PricingData>(PRICING_DEFAULTS);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+
+  useEffect(() => {
+    const token = getAdminToken();
+    fetch("/api/admin/pricing", { headers: { Authorization: `Bearer ${token}` } })
+      .then(r => r.json())
+      .then(data => {
+        setForm(prev => ({ ...prev, ...Object.fromEntries(Object.keys(prev).map(k => [k, data[k] ?? prev[k as keyof PricingData]])) }));
+        setIsLoading(false);
+      })
+      .catch(() => setIsLoading(false));
+  }, []);
+
+  const handleSave = async () => {
+    setIsSaving(true);
+    const token = getAdminToken();
+    try {
+      await fetch("/api/admin/pricing", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify(form),
+      });
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2500);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const setF = (key: keyof PricingData) => (e: React.ChangeEvent<HTMLInputElement>) =>
+    setForm(prev => ({ ...prev, [key]: Number(e.target.value) }));
+
+  if (isLoading) return (
+    <div className="flex items-center justify-center py-40">
+      <Loader2 className="w-8 h-8 animate-spin text-gray-300" />
+    </div>
+  );
+
+  function PriceCard({ title, subtitle, icon: Icon, children }: {
+    title: string; subtitle: string; icon: React.ElementType; children: React.ReactNode;
+  }) {
+    return (
+      <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-7">
+        <div className="flex items-center gap-3 mb-6 pb-5 border-b border-gray-50">
+          <div className="w-10 h-10 bg-[#1A1A1A] rounded-2xl flex items-center justify-center shrink-0">
+            <Icon size={18} className="text-white" />
+          </div>
+          <div>
+            <h3 className="font-black text-gray-900 text-base tracking-tight">{title}</h3>
+            <p className="text-xs text-gray-400 font-medium mt-0.5">{subtitle}</p>
+          </div>
+        </div>
+        <div className="space-y-4">{children}</div>
+      </div>
+    );
+  }
+
+  function PriceField({ label, fieldKey, prefix = "$", suffix = "", step = "0.01", min = "0" }: {
+    label: string; fieldKey: keyof PricingData; prefix?: string; suffix?: string; step?: string; min?: string;
+  }) {
+    return (
+      <div className="flex items-center justify-between gap-4">
+        <label className="text-sm font-semibold text-gray-700 flex-1">{label}</label>
+        <div className="relative w-36 shrink-0">
+          {prefix && <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-bold text-gray-400 pointer-events-none">{prefix}</span>}
+          <input
+            type="number"
+            step={step}
+            min={min}
+            value={form[fieldKey]}
+            onChange={setF(fieldKey)}
+            className={`w-full border border-gray-200 rounded-xl py-2.5 text-sm font-bold text-gray-900 outline-none focus:border-gray-900 transition-colors bg-gray-50 focus:bg-white text-right ${suffix ? "pr-9" : "pr-3"} ${prefix ? "pl-7" : "pl-3"}`}
+          />
+          {suffix && <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-gray-400 pointer-events-none">{suffix}</span>}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h2 className="text-2xl font-black text-gray-900 tracking-tight">Pricing Configuration</h2>
+          <p className="text-sm text-gray-400 font-medium mt-1">Manage rates, surcharges, and fees — changes apply to new bookings immediately.</p>
+        </div>
+        <button
+          onClick={handleSave}
+          disabled={isSaving}
+          className={`flex items-center gap-2 px-7 py-3.5 font-bold text-sm tracking-widest uppercase rounded-2xl transition-all shadow-sm shrink-0 ${saved ? 'bg-green-500 text-white' : 'bg-[#1A1A1A] text-white hover:bg-gray-800'} disabled:opacity-50`}
+        >
+          {isSaving ? <><Loader2 size={16} className="animate-spin" /> Saving...</> : saved ? <><CheckCircle size={16} /> Saved!</> : <><Save size={16} /> Save Changes</>}
+        </button>
+      </div>
+
+      <div className="grid md:grid-cols-2 gap-5">
+        {/* Base Rates */}
+        <PriceCard title="Base Rates" subtitle="Per-mile pricing and minimum fare" icon={DollarSign}>
+          <PriceField label="Rate Per Mile" fieldKey="baseRatePerMile" />
+          <PriceField label="Minimum Fare" fieldKey="minimumFare" />
+          <PriceField label="Base Fare (added to all trips)" fieldKey="baseFare" />
+        </PriceCard>
+
+        {/* Hourly Service */}
+        <PriceCard title="Hourly Service" subtitle="As-directed hourly booking rates" icon={Clock}>
+          <PriceField label="Hourly Rate" fieldKey="hourlyRate" />
+          <PriceField label="Minimum Hours Required" fieldKey="minimumHours" prefix="" suffix="hrs" step="0.5" />
+        </PriceCard>
+
+        {/* Airport */}
+        <PriceCard title="Airport Flat Rates" subtitle="Override per-mile rate for airport trips (set 0 to use per-mile)" icon={Briefcase}>
+          <PriceField label="Pickup — From Airport" fieldKey="airportPickupFlat" />
+          <PriceField label="Dropoff — To Airport" fieldKey="airportDropoffFlat" />
+        </PriceCard>
+
+        {/* Surcharges */}
+        <PriceCard title="Surcharges & Gratuity" subtitle="Percentage added on top of the base fare" icon={TrendingUp}>
+          <PriceField label="Default Gratuity" fieldKey="gratuityDefault" prefix="" suffix="%" step="1" />
+          <PriceField label="Fuel Surcharge" fieldKey="fuelSurcharge" prefix="" suffix="%" step="0.5" />
+          <PriceField label="Night Surcharge (after 10 PM)" fieldKey="nightSurcharge" prefix="" suffix="%" step="1" />
+          <PriceField label="Holiday Surcharge" fieldKey="holidaySurcharge" prefix="" suffix="%" step="1" />
+        </PriceCard>
+
+        {/* Wait Time */}
+        <PriceCard title="Wait Time Billing" subtitle="Charge for driver wait beyond the complimentary window" icon={Clock}>
+          <PriceField label="Wait Time Rate" fieldKey="waitTimeRate" suffix="/hr" step="1" />
+          <PriceField label="Complimentary Wait Time" fieldKey="waitTimeFreeMinutes" prefix="" suffix="min" step="5" />
+        </PriceCard>
+
+        {/* Extra Stops */}
+        <PriceCard title="Extra Stops" subtitle="Fee per additional stop along the route" icon={MapPin}>
+          <PriceField label="Additional Stop Fee" fieldKey="additionalStopFee" />
+        </PriceCard>
+      </div>
+
+      {/* Per-vehicle note */}
+      <div className="bg-blue-50 border border-blue-100 rounded-2xl p-5 flex gap-3 items-start">
+        <AlertCircle size={18} className="text-blue-500 shrink-0 mt-0.5" />
+        <div>
+          <p className="text-sm font-bold text-blue-900">Per-vehicle overrides</p>
+          <p className="text-xs text-blue-700 font-medium mt-1">Individual vehicles can have their own flat rate and hourly rate set in the <strong>Fleet</strong> section — those take priority over the global rates above for that specific vehicle.</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────────
    MAIN ADMIN LAYOUT
 ───────────────────────────────────────────────────────────── */
-type TabId = 'dashboard' | 'bookings' | 'calendar' | 'fleet' | 'services' | 'zones' | 'contacts' | 'settings';
+type TabId = 'dashboard' | 'bookings' | 'calendar' | 'fleet' | 'services' | 'zones' | 'pricing' | 'contacts' | 'settings';
 
 const NAV_GROUPS = [
   {
@@ -1553,6 +1734,7 @@ const NAV_GROUPS = [
       { id: 'fleet' as TabId, label: 'Fleet', icon: Car },
       { id: 'services' as TabId, label: 'Services', icon: Package },
       { id: 'zones' as TabId, label: 'Zones', icon: MapPin },
+      { id: 'pricing' as TabId, label: 'Pricing', icon: DollarSign },
     ]
   },
   {
@@ -1600,6 +1782,7 @@ export default function Admin() {
     fleet: 'Fleet',
     services: 'Services',
     zones: 'Zones',
+    pricing: 'Pricing',
     contacts: 'Messages',
     settings: 'Settings',
   };
@@ -1612,6 +1795,7 @@ export default function Admin() {
       case 'fleet': return <FleetTab />;
       case 'services': return <ServicesTab />;
       case 'zones': return <ZonesTab />;
+      case 'pricing': return <PricingTab />;
       case 'contacts': return <ContactsTab />;
       case 'settings': return <SettingsTab />;
       default: return <DashboardTab onGoTo={(tab) => setActiveTab(tab as TabId)} />;
@@ -1625,7 +1809,7 @@ export default function Admin() {
         <img
           src={eclipseLogo}
           alt="Eclipse Transport"
-          className="h-14 w-auto object-contain"
+          className="h-20 w-auto object-contain"
         />
         <p className="text-[11px] font-extrabold text-gray-400 uppercase tracking-[0.18em] mt-2 pl-0.5">
           Admin Panel

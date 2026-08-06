@@ -3,3 +3,4 @@ export * from "./fleet.js";
 export * from "./bookings.js";
 export * from "./contacts.js";
 export * from "./zones.js";
+export * from "./pricing.js";
