@@ -5,6 +5,7 @@ import fleetRouter from "./fleet";
 import bookingsRouter from "./bookings";
 import contactsRouter from "./contacts";
 import adminRouter from "./admin";
+import stripeRouter from "./stripe";
 
 const router: IRouter = Router();
 
@@ -14,5 +15,6 @@ router.use(fleetRouter);
 router.use(bookingsRouter);
 router.use(contactsRouter);
 router.use(adminRouter);
+router.use(stripeRouter);
 
 export default router;

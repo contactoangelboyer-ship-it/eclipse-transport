@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -14,8 +14,9 @@ import {
   Users, Briefcase, Plus, Minus, ArrowRight, Phone,
   Heart, Music, Trophy, Car, Church, Wind,
   ChevronRight, ChevronLeft, Luggage, Wifi, Star, Check, Shield,
-  Smartphone, Copy, CreditCard, Info, Zap
+  CreditCard, Info, Lock
 } from "lucide-react";
+import { StripeCheckout } from "@/components/StripeCheckout";
 
 import suburbanImg from "@assets/generated_images/fleet-suburban.jpg";
 import escaladeImg from "@assets/generated_images/fleet-escalade.jpg";
@@ -71,8 +72,6 @@ const addons = [
   { id: "addonChildSeat",    label: "Child Seat",         desc: "Certified child safety seat",             price: 20 },
   { id: "addonFlowers",      label: "Welcome Flowers",    desc: "Seasonal bouquet for arrivals & events",  price: 45 },
 ];
-
-const ZELLE_PHONE = "626 391 3844";
 
 /* ─────────────────────────── schema ─────────────────────────── */
 
@@ -213,26 +212,6 @@ function StepPanel({ children, stepKey }: { children: React.ReactNode; stepKey: 
   );
 }
 
-/* ─────────────────────────── Zelle copy button ─────────────────────────── */
-function ZelleCopy({ text }: { text: string }) {
-  const [copied, setCopied] = useState(false);
-  const handleCopy = () => {
-    navigator.clipboard.writeText(text);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
-  return (
-    <button
-      type="button"
-      onClick={handleCopy}
-      className="flex items-center gap-1.5 text-xs font-semibold text-[#1A1A1A]/60 hover:text-[#1A1A1A] transition-colors touch-manipulation"
-    >
-      {copied ? <Check className="w-3.5 h-3.5 text-green-500" /> : <Copy className="w-3.5 h-3.5" />}
-      {copied ? "Copied!" : "Copy"}
-    </button>
-  );
-}
-
 /* ─────────────────────────── main component ─────────────────────────── */
 
 export default function Book() {
@@ -240,8 +219,13 @@ export default function Book() {
   const defaultService = searchParams.get("service") || "Airport Transfer";
   const defaultVehicle  = searchParams.get("vehicle") || "";
 
-  const [step, setStep]           = useState(1);
-  const [isSuccess, setIsSuccess] = useState(false);
+  const [step, setStep]             = useState(1);
+  const [isSuccess, setIsSuccess]   = useState(false);
+  const [clientSecret, setClientSecret]   = useState<string | null>(null);
+  const [paymentIntentId, setPaymentIntentId] = useState<string | null>(null);
+  const [piLoading, setPiLoading]   = useState(false);
+  const [piError, setPiError]       = useState<string | null>(null);
+  const piCreated                   = useRef(false);
   const queryClient   = useQueryClient();
   const createBooking = useCreateBooking();
 
@@ -299,16 +283,51 @@ export default function Book() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  const onSubmit = (data: BookingFormValues) => {
+  /* ── Create Stripe payment intent when reaching step 5 ── */
+  useEffect(() => {
+    if (step !== 5 || piCreated.current || totalEstimate <= 0) return;
+    piCreated.current = true;
+    setPiLoading(true);
+    setPiError(null);
+
+    const apiBase = (import.meta.env.BASE_URL ?? "/").replace(/\/$/, "");
+    fetch(`${apiBase}/api/stripe/payment-intent`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        amount: totalEstimate,
+        customerEmail: values.passengerEmail,
+        metadata: {
+          passengerName: values.passengerName || "Guest",
+          serviceType:   values.tripType || "",
+          pickupDate:    values.pickupDate || "",
+        },
+      }),
+    })
+      .then(r => r.json())
+      .then((data: { clientSecret?: string; error?: string }) => {
+        if (data.clientSecret) {
+          setClientSecret(data.clientSecret);
+        } else {
+          setPiError(data.error ?? "Could not initialise payment.");
+        }
+      })
+      .catch(() => setPiError("Network error. Please check your connection."))
+      .finally(() => setPiLoading(false));
+  }, [step, totalEstimate]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  /* ── Called after Stripe payment succeeds ── */
+  const handlePaymentSuccess = (piId: string, data: BookingFormValues) => {
+    setPaymentIntentId(piId);
     const reqs: string[] = [];
-    if (data.addonMeetGreet)       reqs.push("Meet & Greet (+$25)");
-    if (data.addonChildSeat)       reqs.push("Child Seat (+$20)");
-    if (data.addonFlowers)         reqs.push("Welcome Flowers (+$45)");
-    if (data.addonFlightMonitor)   reqs.push("Flight Monitoring (included)");
+    if (data.addonMeetGreet)        reqs.push("Meet & Greet (+$25)");
+    if (data.addonChildSeat)        reqs.push("Child Seat (+$20)");
+    if (data.addonFlowers)          reqs.push("Welcome Flowers (+$45)");
+    if (data.addonFlightMonitor)    reqs.push("Flight Monitoring (included)");
     if ((data.extraStops || 0) > 0) reqs.push(`${data.extraStops} extra stop(s) (+$${(data.extraStops || 0) * 15})`);
-    if (data.specialInstructions)  reqs.push(`Notes: ${data.specialInstructions}`);
-    if (data.flightNumber)         reqs.push(`Flight: ${data.airline || ""} ${data.flightNumber} / Terminal ${data.terminal || "TBD"}`);
-    reqs.push(`Payment: Zelle sent to ${ZELLE_PHONE}`);
+    if (data.specialInstructions)   reqs.push(`Notes: ${data.specialInstructions}`);
+    if (data.flightNumber)          reqs.push(`Flight: ${data.airline || ""} ${data.flightNumber} / Terminal ${data.terminal || "TBD"}`);
+    reqs.push(`Stripe Payment ID: ${piId}`);
 
     createBooking.mutate({
       data: {
@@ -335,6 +354,9 @@ export default function Book() {
     });
   };
 
+  /* ── Legacy onSubmit (kept for form handleSubmit compatibility) ── */
+  const onSubmit = (_data: BookingFormValues) => { /* payment handled by Stripe form */ };
+
   /* ─────────────── success screen ─────────────── */
   if (isSuccess) {
     return (
@@ -357,38 +379,23 @@ export default function Book() {
               </p>
             </div>
 
-            {/* ── Zelle payment reminder ── */}
+            {/* ── Payment confirmation badge ── */}
             {totalEstimate > 0 && (
-              <div className="bg-[#6B11D0]/5 border-2 border-[#6B11D0]/20 rounded-2xl p-5 mb-4">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="w-10 h-10 bg-[#6B11D0] rounded-xl flex items-center justify-center shrink-0">
-                    <Zap className="w-5 h-5 text-white" strokeWidth={2} />
+              <div className="bg-green-50 border-2 border-green-200 rounded-2xl p-5 mb-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-green-500 rounded-xl flex items-center justify-center shrink-0">
+                    <CreditCard className="w-5 h-5 text-white" strokeWidth={2} />
                   </div>
                   <div>
-                    <p className="font-bold text-gray-900 text-sm">Send Payment via Zelle</p>
-                    <p className="text-xs text-gray-500">Required to confirm your booking</p>
+                    <p className="font-bold text-gray-900 text-sm">Payment Confirmed</p>
+                    <p className="text-xs text-gray-500">${totalEstimate} charged successfully via Stripe</p>
                   </div>
                 </div>
-                <div className="bg-white rounded-xl p-4 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs text-gray-500 font-medium uppercase tracking-wide">Send to</span>
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-bold text-gray-900">{ZELLE_PHONE}</span>
-                      <ZelleCopy text={ZELLE_PHONE} />
-                    </div>
-                  </div>
-                  <div className="flex items-center justify-between border-t border-gray-100 pt-3">
-                    <span className="text-xs text-gray-500 font-medium uppercase tracking-wide">Amount</span>
-                    <div className="flex items-center gap-2">
-                      <span className="text-lg font-bold text-[#6B11D0]">${totalEstimate}</span>
-                      <ZelleCopy text={`${totalEstimate}`} />
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-2 bg-amber-50 rounded-lg p-2.5 text-xs text-amber-800">
-                    <Info className="w-3.5 h-3.5 shrink-0 mt-0.5" />
-                    <span>Add your name in the memo so we can match your payment. Booking is confirmed once payment is received.</span>
-                  </div>
-                </div>
+                {paymentIntentId && (
+                  <p className="mt-3 text-[10px] text-gray-400 font-mono break-all">
+                    Ref: {paymentIntentId}
+                  </p>
+                )}
               </div>
             )}
 
@@ -832,112 +839,57 @@ export default function Book() {
                     </StepPanel>
                   )}
 
-                  {/* ═══ STEP 5 — Payment (Zelle) ═══ */}
+                  {/* ═══ STEP 5 — Payment (Stripe) ═══ */}
                   {step === 5 && (
                     <StepPanel stepKey={5}>
                       <div className="mb-5">
                         <h1 className="text-xl font-bold text-gray-900">Payment</h1>
-                        <p className="text-gray-400 text-sm mt-1">We accept Zelle for quick and secure payment.</p>
+                        <p className="text-gray-400 text-sm mt-1">Your card is charged securely via Stripe.</p>
                       </div>
 
                       <div className="space-y-4">
-                        {/* Zelle card */}
-                        <div className="bg-white rounded-2xl border-2 border-[#6B11D0]/20 shadow-sm overflow-hidden">
-                          {/* Header */}
-                          <div className="bg-gradient-to-br from-[#6B11D0] to-[#8B31F0] p-5 text-white">
-                            <div className="flex items-center gap-3 mb-1">
-                              <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
-                                <Zap className="w-5 h-5 text-white" />
-                              </div>
-                              <div>
-                                <p className="font-bold text-lg leading-tight">Zelle</p>
-                                <p className="text-white/70 text-xs">Instant bank-to-bank transfer</p>
-                              </div>
+                        {/* Amount summary */}
+                        {totalEstimate > 0 && (
+                          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
+                            <div className="flex items-center justify-between">
+                              <span className="text-sm font-medium text-gray-600">Total due today</span>
+                              <span className="text-2xl font-bold text-gray-900">${totalEstimate}</span>
+                            </div>
+                            <div className="mt-3 pt-3 border-t border-gray-100 space-y-1 text-xs text-gray-500">
+                              <div className="flex justify-between"><span>Base rate</span><span>${baseRate}</span></div>
+                              {addonsTotal > 0 && <div className="flex justify-between"><span>Add-ons</span><span>+${addonsTotal}</span></div>}
+                              {gratuity > 0 && <div className="flex justify-between"><span>Gratuity (20%)</span><span>+${gratuity}</span></div>}
                             </div>
                           </div>
+                        )}
 
-                          {/* Body */}
-                          <div className="p-5 space-y-4">
-                            <div>
-                              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3">Send Payment To</p>
-                              <div className="bg-gray-50 rounded-xl p-4 flex items-center justify-between">
-                                <div className="flex items-center gap-3">
-                                  <div className="w-10 h-10 bg-[#6B11D0]/10 rounded-xl flex items-center justify-center">
-                                    <Smartphone className="w-5 h-5 text-[#6B11D0]" />
-                                  </div>
-                                  <div>
-                                    <p className="text-xs text-gray-500 font-medium">Phone number</p>
-                                    <p className="text-lg font-bold text-gray-900 tracking-wide">{ZELLE_PHONE}</p>
-                                  </div>
-                                </div>
-                                <ZelleCopy text={ZELLE_PHONE} />
-                              </div>
-                            </div>
-
-                            {totalEstimate > 0 && (
-                              <div>
-                                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3">Amount to Send</p>
-                                <div className="bg-gray-50 rounded-xl p-4 flex items-center justify-between">
-                                  <div className="flex items-center gap-3">
-                                    <div className="w-10 h-10 bg-green-50 rounded-xl flex items-center justify-center">
-                                      <CreditCard className="w-5 h-5 text-green-600" />
-                                    </div>
-                                    <div>
-                                      <p className="text-xs text-gray-500 font-medium">Total estimate</p>
-                                      <p className="text-2xl font-bold text-gray-900">${totalEstimate}</p>
-                                    </div>
-                                  </div>
-                                  <ZelleCopy text={`${totalEstimate}`} />
-                                </div>
-                              </div>
-                            )}
-
-                            {/* Price breakdown */}
-                            {totalEstimate > 0 && (
-                              <div className="border border-gray-100 rounded-xl p-4 text-sm space-y-2">
-                                {baseRate > 0 && (
-                                  <div className="flex justify-between text-gray-500">
-                                    <span>Base rate</span><span>${baseRate}</span>
-                                  </div>
-                                )}
-                                {addonsTotal > 0 && (
-                                  <div className="flex justify-between text-gray-500">
-                                    <span>Add-ons</span><span>+${addonsTotal}</span>
-                                  </div>
-                                )}
-                                {gratuity > 0 && (
-                                  <div className="flex justify-between text-gray-500">
-                                    <span>Gratuity (20%)</span><span>+${gratuity}</span>
-                                  </div>
-                                )}
-                                <div className="flex justify-between font-bold text-base border-t border-gray-100 pt-2 mt-2">
-                                  <span>Total</span><span className="text-[#6B11D0]">${totalEstimate}</span>
-                                </div>
-                              </div>
-                            )}
-
-                            {/* Instructions */}
-                            <div className="bg-amber-50 border border-amber-100 rounded-xl p-4 space-y-2">
-                              <div className="flex items-center gap-2 text-amber-800 font-semibold text-sm">
-                                <Info className="w-4 h-4 shrink-0" />
-                                Payment Instructions
-                              </div>
-                              <ol className="text-xs text-amber-700 space-y-1.5 pl-1 list-decimal list-inside">
-                                <li>Open your Zelle app or bank app</li>
-                                <li>Send to <strong>{ZELLE_PHONE}</strong></li>
-                                <li>Enter the amount: <strong>${totalEstimate > 0 ? `$${totalEstimate}` : "the quoted amount"}</strong></li>
-                                <li>Add your name in the memo so we can match your payment</li>
-                                <li>Click "Confirm Booking" — we'll confirm once payment is received</li>
-                              </ol>
-                            </div>
-
-                            {/* Trust */}
-                            <div className="flex items-start gap-2 text-xs text-gray-400">
-                              <Shield className="w-3.5 h-3.5 shrink-0 mt-0.5" />
-                              <span>Your booking is confirmed upon payment receipt. Our team will reach out within 15 minutes.</span>
-                            </div>
+                        {/* Stripe payment form */}
+                        {piLoading && (
+                          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-10 flex flex-col items-center gap-3">
+                            <Loader2 className="w-8 h-8 animate-spin text-gray-300" />
+                            <p className="text-sm text-gray-400">Initialising secure payment…</p>
                           </div>
-                        </div>
+                        )}
+                        {piError && (
+                          <div className="bg-red-50 border border-red-100 rounded-2xl p-4">
+                            <p className="text-red-600 text-sm font-medium">{piError}</p>
+                            <button
+                              type="button"
+                              className="mt-2 text-xs text-red-500 underline"
+                              onClick={() => { piCreated.current = false; setPiError(null); setStep(5); }}
+                            >
+                              Retry
+                            </button>
+                          </div>
+                        )}
+                        {clientSecret && !piLoading && (
+                          <StripeCheckout
+                            clientSecret={clientSecret}
+                            amount={totalEstimate}
+                            onSuccess={(piId) => handlePaymentSuccess(piId, values as BookingFormValues)}
+                            onError={(msg) => setPiError(msg)}
+                          />
+                        )}
 
                         {/* Mini trip summary */}
                         <div className="bg-white rounded-2xl border border-gray-100 p-4 shadow-sm">
@@ -982,17 +934,8 @@ export default function Book() {
                       Continue <ChevronRight className="w-4 h-4" />
                     </button>
                   ) : (
-                    <button
-                      type="submit"
-                      disabled={createBooking.isPending}
-                      className="flex items-center gap-2 h-12 bg-[#1A1A1A] text-white px-8 rounded-xl text-sm font-bold hover:bg-gray-800 active:scale-95 transition-all shadow-sm disabled:opacity-60"
-                    >
-                      {createBooking.isPending ? (
-                        <><Loader2 className="w-4 h-4 animate-spin" /> Sending…</>
-                      ) : (
-                        <><CheckCircle2 className="w-4 h-4" /> Confirm Booking</>
-                      )}
-                    </button>
+                    /* Step 5 — Stripe form has its own Pay button */
+                    <div />
                   )}
                 </div>
               </form>
@@ -1070,14 +1013,16 @@ export default function Book() {
                   </div>
                 )}
 
-                {/* Zelle teaser (shown from step 2 onward when there's a price) */}
+                {/* Stripe payment badge */}
                 {step >= 2 && totalEstimate > 0 && (
-                  <div className="bg-[#6B11D0]/5 border border-[#6B11D0]/15 rounded-2xl p-4">
-                    <div className="flex items-center gap-2.5 mb-2">
-                      <Zap className="w-4 h-4 text-[#6B11D0]" />
-                      <p className="text-xs font-bold text-[#6B11D0] uppercase tracking-wide">Payment via Zelle</p>
+                  <div className="bg-gray-50 border border-gray-100 rounded-2xl p-4">
+                    <div className="flex items-center gap-2.5 mb-1.5">
+                      <Lock className="w-3.5 h-3.5 text-gray-400" />
+                      <p className="text-xs font-bold text-gray-600 uppercase tracking-wide">Secure Payment</p>
                     </div>
-                    <p className="text-xs text-gray-500">Send <strong className="text-gray-700">${totalEstimate}</strong> to <strong className="text-gray-700">{ZELLE_PHONE}</strong> after confirming.</p>
+                    <p className="text-xs text-gray-500">
+                      <strong className="text-gray-700">${totalEstimate}</strong> charged via Stripe — SSL encrypted.
+                    </p>
                   </div>
                 )}
 
@@ -1132,14 +1077,8 @@ export default function Book() {
               Continue <ChevronRight className="w-4 h-4" />
             </button>
           ) : (
-            <button
-              type="button"
-              onClick={handleSubmit(onSubmit)}
-              disabled={createBooking.isPending}
-              className="flex items-center gap-1.5 h-12 bg-[#1A1A1A] text-white px-7 rounded-xl text-sm font-bold shrink-0 disabled:opacity-60 active:scale-95 touch-manipulation"
-            >
-              {createBooking.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <><CheckCircle2 className="w-4 h-4" /> Confirm</>}
-            </button>
+            /* Step 5 — Stripe form handles payment */
+            null
           )}
         </div>
       </div>

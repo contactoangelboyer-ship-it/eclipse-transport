@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
+import eclipseLogo from "@assets/eclipse-logo-new-transparent.png";
 import { createPortal } from "react-dom";
 import { useLocation } from "wouter";
 import {
@@ -166,7 +167,7 @@ function SlideOver({ isOpen, onClose, title, children }: { isOpen: boolean; onCl
 }
 
 function SectionTitle({ children }: { children: React.ReactNode }) {
-  return <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 px-5 mb-2 mt-1">{children}</p>;
+  return <p className="text-[11px] font-extrabold uppercase tracking-[0.15em] text-gray-400 px-5 mb-2 mt-1">{children}</p>;
 }
 
 function Divider() {
@@ -1620,16 +1621,15 @@ export default function Admin() {
   const SidebarContent = () => (
     <div className="flex flex-col h-full">
       {/* Logo */}
-      <div className="px-6 py-8 shrink-0">
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 bg-[#1A1A1A] rounded-xl flex items-center justify-center">
-            <span className="text-white font-black text-xs tracking-wider">EC</span>
-          </div>
-          <div>
-            <p className="font-black text-gray-900 text-sm tracking-tight">Eclipse</p>
-            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Admin Panel</p>
-          </div>
-        </div>
+      <div className="px-5 pt-7 pb-6 shrink-0 border-b border-gray-100">
+        <img
+          src={eclipseLogo}
+          alt="Eclipse Transport"
+          className="h-14 w-auto object-contain"
+        />
+        <p className="text-[11px] font-extrabold text-gray-400 uppercase tracking-[0.18em] mt-2 pl-0.5">
+          Admin Panel
+        </p>
       </div>
 
       {/* Nav Groups */}
@@ -1646,19 +1646,19 @@ export default function Admin() {
                 <button
                   key={item.id}
                   onClick={() => { setActiveTab(item.id); setIsMobileMenuOpen(false); }}
-                  className={`w-full flex items-center justify-between px-4 py-3.5 rounded-2xl transition-all duration-200 outline-none ${isActive ? 'bg-[#1A1A1A] text-white shadow-md' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'}`}
+                  className={`w-full flex items-center justify-between px-4 py-4 rounded-2xl transition-all duration-200 outline-none ${isActive ? 'bg-[#1A1A1A] text-white shadow-md' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'}`}
                 >
-                  <div className="flex items-center gap-3.5">
-                    <Icon size={17} strokeWidth={isActive ? 2.5 : 2} />
-                    <span className={`text-sm ${isActive ? 'font-bold' : 'font-semibold'}`}>{item.label}</span>
+                  <div className="flex items-center gap-4">
+                    <Icon size={21} strokeWidth={isActive ? 2.5 : 2} />
+                    <span className={`text-[15px] ${isActive ? 'font-bold' : 'font-semibold'}`}>{item.label}</span>
                   </div>
                   <div className="flex items-center gap-2">
                     {badge > 0 && (
-                      <span className={`min-w-[20px] h-5 px-1.5 text-[10px] font-black rounded-full flex items-center justify-center ${isActive ? 'bg-white/20 text-white' : 'bg-amber-400 text-white'}`}>
+                      <span className={`min-w-[22px] h-5 px-1.5 text-[11px] font-black rounded-full flex items-center justify-center ${isActive ? 'bg-white/25 text-white' : 'bg-amber-400 text-white'}`}>
                         {badge}
                       </span>
                     )}
-                    {isActive && <ChevronRight size={14} className="opacity-40" />}
+                    {isActive && <ChevronRight size={15} className="opacity-40" />}
                   </div>
                 </button>
               );
@@ -1671,16 +1671,16 @@ export default function Admin() {
       <div className="p-4 border-t border-gray-100 space-y-1 shrink-0">
         <button
           onClick={() => window.open('/', '_blank')}
-          className="w-full flex items-center gap-3.5 px-4 py-3.5 text-gray-500 hover:bg-gray-50 hover:text-gray-900 text-sm font-semibold rounded-2xl transition-all"
+          className="w-full flex items-center gap-4 px-4 py-4 text-gray-500 hover:bg-gray-50 hover:text-gray-900 text-[15px] font-semibold rounded-2xl transition-all"
         >
-          <ExternalLink size={17} strokeWidth={2} />
+          <ExternalLink size={21} strokeWidth={2} />
           View Live Site
         </button>
         <button
           onClick={handleLogout}
-          className="w-full flex items-center gap-3.5 px-4 py-3.5 text-red-500 hover:bg-red-50 text-sm font-semibold rounded-2xl transition-all"
+          className="w-full flex items-center gap-4 px-4 py-4 text-red-500 hover:bg-red-50 text-[15px] font-semibold rounded-2xl transition-all"
         >
-          <LogOut size={17} strokeWidth={2} />
+          <LogOut size={21} strokeWidth={2} />
           Sign Out
         </button>
       </div>
@@ -1693,7 +1693,7 @@ export default function Admin() {
       <div className="flex min-h-screen bg-[#F7F6F3] no-print">
 
         {/* Desktop Sidebar */}
-        <aside className="hidden md:flex w-64 shrink-0 bg-white border-r border-gray-100 flex-col fixed inset-y-0 left-0 z-20 shadow-sm">
+        <aside className="hidden md:flex w-72 shrink-0 bg-white border-r border-gray-100 flex-col fixed inset-y-0 left-0 z-20 shadow-sm">
           <SidebarContent />
         </aside>
 
@@ -1708,7 +1708,7 @@ export default function Admin() {
         )}
 
         {/* Main Content */}
-        <div className="flex-1 flex flex-col md:ml-64">
+        <div className="flex-1 flex flex-col md:ml-72">
           {/* Top Header */}
           <header className="sticky top-0 z-10 bg-[#F7F6F3]/90 backdrop-blur-md border-b border-gray-100/80 px-6 md:px-10 py-4 flex items-center justify-between shrink-0">
             <div className="flex items-center gap-4">
