@@ -18,8 +18,7 @@ const vehicles = [
     description: "The pinnacle of understated luxury. Exceptionally spacious, impeccably maintained, and equipped for the most demanding clientele.",
     capacity: 7,
     luggage: "6 bags",
-    baseRate: "$120",
-    hourlyRate: "$80/hr",
+    ratePerMile: "$6.20",
     hasWifi: true,
     hasPrivacy: true,
     hasChildSeat: true,
@@ -36,8 +35,7 @@ const vehicles = [
     description: "Commanding presence with refined interiors. Offers an unparalleled ride experience with cutting-edge technology and premium leather seating.",
     capacity: 7,
     luggage: "6 bags",
-    baseRate: "$140",
-    hourlyRate: "$95/hr",
+    ratePerMile: "$7.15",
     hasWifi: true,
     hasPrivacy: true,
     hasChildSeat: true,
@@ -54,8 +52,7 @@ const vehicles = [
     description: "Classic executive elegance. A quiet, smooth journey perfect for airport transfers and corporate travel with ample legroom.",
     capacity: 3,
     luggage: "3 bags",
-    baseRate: "$85",
-    hourlyRate: "$65/hr",
+    ratePerMile: "$5.60",
     hasWifi: true,
     hasPrivacy: true,
     hasChildSeat: false,
@@ -72,8 +69,7 @@ const vehicles = [
     description: "The ultimate standard in luxury sedans. State-of-the-art safety, exquisite craftsmanship, and an extraordinarily smooth ride.",
     capacity: 3,
     luggage: "3 bags",
-    baseRate: "$100",
-    hourlyRate: "$75/hr",
+    ratePerMile: "$5.60",
     hasWifi: true,
     hasPrivacy: true,
     hasChildSeat: false,
@@ -191,18 +187,11 @@ export default function Fleet() {
                     <td className="p-6">3 bags</td>
                   </tr>
                   <tr className="border-b border-black/5 hover:bg-black/[0.02] transition-colors">
-                    <td className="p-6 text-[10px] uppercase tracking-[0.15em] font-bold text-[#1A1A1A]/60">Base Flat Rate</td>
-                    <td className="p-6">From $150</td>
-                    <td className="p-6">From $175</td>
-                    <td className="p-6">From $110</td>
-                    <td className="p-6">From $130</td>
-                  </tr>
-                  <tr className="bg-[#FCFBF8]/50 border-b border-black/5 hover:bg-black/[0.02] transition-colors">
-                    <td className="p-6 text-[10px] uppercase tracking-[0.15em] font-bold text-[#1A1A1A]/60">Hourly Rate</td>
-                    <td className="p-6">$95/hr</td>
-                    <td className="p-6">$110/hr</td>
-                    <td className="p-6">$75/hr</td>
-                    <td className="p-6">$85/hr</td>
+                    <td className="p-6 text-[10px] uppercase tracking-[0.15em] font-bold text-[#1A1A1A]/60">Rate Per Mile</td>
+                    <td className="p-6">$6.20/mile</td>
+                    <td className="p-6">$7.15/mile</td>
+                    <td className="p-6">$5.60/mile</td>
+                    <td className="p-6">$5.60/mile</td>
                   </tr>
                   <tr className="border-b border-black/5 hover:bg-black/[0.02] transition-colors">
                     <td className="p-6 text-[10px] uppercase tracking-[0.15em] font-bold text-[#1A1A1A]/60">Wi-Fi</td>
@@ -264,7 +253,7 @@ function VehicleCard({ vehicle, index }: { vehicle: any, index: number }) {
           {vehicle.description}
         </p>
 
-        <div className="grid grid-cols-2 gap-y-8 gap-x-6 mb-12 border-y border-black/5 py-8">
+        <div className="grid grid-cols-3 gap-y-8 gap-x-6 mb-12 border-y border-black/5 py-8">
           <div className="flex items-center gap-4">
             <Users className="w-5 h-5 text-[#1A1A1A]/30" strokeWidth={1.5} />
             <div>
@@ -277,6 +266,13 @@ function VehicleCard({ vehicle, index }: { vehicle: any, index: number }) {
             <div>
               <p className="font-bold text-[#1A1A1A] text-[10px] uppercase tracking-[0.15em]">Luggage</p>
               <p className="text-sm text-[#1A1A1A]/60 mt-1">{vehicle.luggage}</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-4">
+            <Wifi className="w-5 h-5 text-[#1A1A1A]/30" strokeWidth={1.5} />
+            <div>
+              <p className="font-bold text-[#1A1A1A] text-[10px] uppercase tracking-[0.15em]">Rate Per Mile</p>
+              <p className="text-sm text-[#1A1A1A]/60 mt-1">{vehicle.ratePerMile}/mile</p>
             </div>
           </div>
         </div>
