@@ -40,6 +40,10 @@ async function ensurePricingTable() {
         updated_at            TIMESTAMPTZ NOT NULL DEFAULT now()
       )
     `);
+    // Add rate_per_mile to fleet table if it doesn't exist yet (backward compat)
+    await pool.query(`
+      ALTER TABLE fleet ADD COLUMN IF NOT EXISTS rate_per_mile REAL NOT NULL DEFAULT 0
+    `);
     logger.info("pricing_config table ready");
   } catch (err) {
     logger.warn({ err }, "Could not ensure pricing_config table — pricing routes may fail");

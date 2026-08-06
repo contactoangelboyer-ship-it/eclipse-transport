@@ -916,7 +916,7 @@ function FleetTab() {
   const updateFleet = useAdminUpdateFleet();
   const deleteFleet = useAdminDeleteFleet();
 
-  const emptyV = { name: "", model: "", year: new Date().getFullYear(), capacity: 4, imageUrl: "", description: "", amenities: [] as string[], vehicleType: "", luggageCapacity: 0, flatRate: 0, hourlyRate: 0 };
+  const emptyV = { name: "", model: "", year: new Date().getFullYear(), capacity: 4, imageUrl: "", description: "", amenities: [] as string[], vehicleType: "", luggageCapacity: 0, ratePerMile: 0, flatRate: 0, hourlyRate: 0 };
   const [modal, setModal] = useState<null | 'create' | 'edit'>(null);
   const [form, setForm] = useState(emptyV);
   const [editId, setEditId] = useState<number | null>(null);
@@ -927,7 +927,7 @@ function FleetTab() {
 
   const openCreate = () => { setForm(emptyV); setAmenitiesInput(""); setModal('create'); };
   const openEdit = (v: Vehicle) => {
-    setForm({ name: v.name, model: v.model, year: v.year, capacity: v.capacity, imageUrl: v.imageUrl ?? "", description: v.description ?? "", amenities: v.amenities ?? [], vehicleType: v.vehicleType ?? "", luggageCapacity: v.luggageCapacity ?? 0, flatRate: v.flatRate ?? 0, hourlyRate: v.hourlyRate ?? 0 });
+    setForm({ name: v.name, model: v.model, year: v.year, capacity: v.capacity, imageUrl: v.imageUrl ?? "", description: v.description ?? "", amenities: v.amenities ?? [], vehicleType: v.vehicleType ?? "", luggageCapacity: v.luggageCapacity ?? 0, ratePerMile: v.ratePerMile ?? 0, flatRate: v.flatRate ?? 0, hourlyRate: v.hourlyRate ?? 0 });
     setAmenitiesInput((v.amenities ?? []).join(", "));
     setEditId(v.id);
     setModal('edit');
@@ -935,7 +935,7 @@ function FleetTab() {
 
   const handleSave = () => {
     const amenities = amenitiesInput.split(",").map(s => s.trim()).filter(Boolean);
-    const payload = { ...form, amenities, year: Number(form.year), capacity: Number(form.capacity), luggageCapacity: Number(form.luggageCapacity), flatRate: Number(form.flatRate), hourlyRate: Number(form.hourlyRate) };
+    const payload = { ...form, amenities, year: Number(form.year), capacity: Number(form.capacity), luggageCapacity: Number(form.luggageCapacity), ratePerMile: Number(form.ratePerMile), flatRate: Number(form.flatRate), hourlyRate: Number(form.hourlyRate) };
     if (modal === 'create') {
       createFleet.mutate({ data: payload }, { onSuccess: () => { qc.invalidateQueries({ queryKey: getAdminListFleetQueryKey() }); setModal(null); } });
     } else if (editId != null) {
@@ -1013,6 +1013,7 @@ function FleetTab() {
               <Field label="Type"><input className={inputClass} value={form.vehicleType} onChange={setF("vehicleType")} placeholder="SUV, Sedan, Van..." /></Field>
               <Field label="Passenger Capacity"><input type="number" className={inputClass} value={form.capacity} onChange={setF("capacity")} /></Field>
               <Field label="Luggage Capacity"><input type="number" className={inputClass} value={form.luggageCapacity} onChange={setF("luggageCapacity")} /></Field>
+              <Field label="Rate Per Mile ($)"><input type="number" className={inputClass} value={form.ratePerMile} onChange={setF("ratePerMile")} step="0.01" min="0" /></Field>
               <Field label="Flat Rate ($)"><input type="number" className={inputClass} value={form.flatRate} onChange={setF("flatRate")} /></Field>
               <Field label="Hourly Rate ($)"><input type="number" className={inputClass} value={form.hourlyRate} onChange={setF("hourlyRate")} /></Field>
             </div>
@@ -1697,14 +1698,91 @@ function PricingTab() {
         </PriceCard>
       </div>
 
-      {/* Per-vehicle note */}
-      <div className="bg-blue-50 border border-blue-100 rounded-2xl p-5 flex gap-3 items-start">
-        <AlertCircle size={18} className="text-blue-500 shrink-0 mt-0.5" />
+      {/* Per-vehicle rates — editable */}
+      <PerVehicleRates />
+    </div>
+  );
+}
+
+function PerVehicleRates() {
+  const { data: fleet, isLoading } = useAdminListFleet({ query: { queryKey: getAdminListFleetQueryKey() } });
+  const updateFleet = useAdminUpdateFleet();
+  const qc = useQueryClient();
+  const [rates, setRates] = useState<Record<number, number>>({});
+  const [savedIds, setSavedIds] = useState<Record<number, boolean>>({});
+
+  useEffect(() => {
+    if (fleet) {
+      const initial: Record<number, number> = {};
+      fleet.forEach(v => { initial[v.id] = v.ratePerMile ?? 0; });
+      setRates(initial);
+    }
+  }, [fleet]);
+
+  const handleSaveVehicle = (v: Vehicle) => {
+    updateFleet.mutate(
+      { id: v.id, data: { name: v.name, model: v.model, year: v.year, capacity: v.capacity, imageUrl: v.imageUrl ?? "", description: v.description ?? "", amenities: v.amenities ?? [], vehicleType: v.vehicleType ?? "", luggageCapacity: v.luggageCapacity ?? 0, ratePerMile: rates[v.id] ?? 0, flatRate: v.flatRate ?? 0, hourlyRate: v.hourlyRate ?? 0 } },
+      {
+        onSuccess: () => {
+          qc.invalidateQueries({ queryKey: getAdminListFleetQueryKey() });
+          setSavedIds(p => ({ ...p, [v.id]: true }));
+          setTimeout(() => setSavedIds(p => ({ ...p, [v.id]: false })), 2500);
+        }
+      }
+    );
+  };
+
+  return (
+    <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-7">
+      <div className="flex items-center gap-3 mb-6 pb-5 border-b border-gray-50">
+        <div className="w-10 h-10 bg-[#1A1A1A] rounded-2xl flex items-center justify-center shrink-0">
+          <Car size={18} className="text-white" />
+        </div>
         <div>
-          <p className="text-sm font-bold text-blue-900">Per-vehicle overrides</p>
-          <p className="text-xs text-blue-700 font-medium mt-1">Individual vehicles can have their own flat rate and hourly rate set in the <strong>Fleet</strong> section — those take priority over the global rates above for that specific vehicle.</p>
+          <h3 className="font-black text-gray-900 text-base tracking-tight">Per-Vehicle Rate Per Mile</h3>
+          <p className="text-xs text-gray-400 font-medium mt-0.5">Overrides the global base rate for each vehicle. Set to 0 to use the global rate above.</p>
         </div>
       </div>
+      {isLoading ? (
+        <div className="flex justify-center py-8"><Loader2 className="w-6 h-6 animate-spin text-gray-300" /></div>
+      ) : !fleet?.length ? (
+        <p className="text-sm text-gray-400 text-center py-6">No vehicles yet — add vehicles in the Fleet section first.</p>
+      ) : (
+        <div className="space-y-3">
+          {fleet.map(v => (
+            <div key={v.id} className="flex items-center justify-between gap-4 py-2 border-b border-gray-50 last:border-0">
+              <div className="flex items-center gap-3 flex-1 min-w-0">
+                {v.imageUrl && <img src={v.imageUrl} alt={v.name} className="w-10 h-10 rounded-xl object-cover shrink-0" />}
+                <div className="min-w-0">
+                  <p className="font-bold text-gray-900 text-sm truncate">{v.name}</p>
+                  <p className="text-xs text-gray-400 font-medium">{v.model}</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                <div className="relative w-32">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-bold text-gray-400 pointer-events-none">$</span>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={rates[v.id] ?? 0}
+                    onChange={e => setRates(p => ({ ...p, [v.id]: Number(e.target.value) }))}
+                    className="w-full border border-gray-200 rounded-xl py-2.5 pl-7 pr-10 text-sm font-bold text-gray-900 outline-none focus:border-gray-900 transition-colors bg-gray-50 focus:bg-white text-right"
+                  />
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-gray-400 pointer-events-none">/mi</span>
+                </div>
+                <button
+                  onClick={() => handleSaveVehicle(v)}
+                  disabled={updateFleet.isPending}
+                  className={`flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-bold uppercase tracking-widest transition-all ${savedIds[v.id] ? 'bg-green-500 text-white' : 'bg-[#1A1A1A] text-white hover:bg-gray-800'} disabled:opacity-40`}
+                >
+                  {savedIds[v.id] ? <><CheckCircle size={12} /> Saved</> : <><Save size={12} /> Save</>}
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

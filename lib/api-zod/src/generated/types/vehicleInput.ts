@@ -25,6 +25,8 @@ export interface VehicleInput {
   /** @minimum 0 */
   luggageCapacity?: number;
   /** @minimum 0 */
+  ratePerMile?: number;
+  /** @minimum 0 */
   flatRate?: number;
   /** @minimum 0 */
   hourlyRate?: number;

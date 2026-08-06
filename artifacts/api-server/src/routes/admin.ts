@@ -92,6 +92,7 @@ router.post("/admin/fleet", adminAuth, async (req, res): Promise<void> => {
     amenities: parsed.data.amenities ?? [],
     vehicleType: parsed.data.vehicleType ?? "",
     luggageCapacity: parsed.data.luggageCapacity ?? 0,
+    ratePerMile: parsed.data.ratePerMile ?? 0,
     flatRate: parsed.data.flatRate ?? 0,
     hourlyRate: parsed.data.hourlyRate ?? 0,
   }).returning();
@@ -119,6 +120,7 @@ router.patch("/admin/fleet/:id", adminAuth, async (req, res): Promise<void> => {
   if (parsed.data.amenities !== undefined) updateData.amenities = parsed.data.amenities;
   if (parsed.data.vehicleType !== undefined) updateData.vehicleType = parsed.data.vehicleType;
   if (parsed.data.luggageCapacity !== undefined) updateData.luggageCapacity = parsed.data.luggageCapacity;
+  if (parsed.data.ratePerMile !== undefined) updateData.ratePerMile = parsed.data.ratePerMile;
   if (parsed.data.flatRate !== undefined) updateData.flatRate = parsed.data.flatRate;
   if (parsed.data.hourlyRate !== undefined) updateData.hourlyRate = parsed.data.hourlyRate;
   const [vehicle] = await db.update(fleetTable).set(updateData).where(eq(fleetTable.id, params.data.id)).returning();

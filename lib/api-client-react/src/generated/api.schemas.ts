@@ -40,6 +40,7 @@ export interface Vehicle {
   amenities?: string[];
   vehicleType?: string;
   luggageCapacity?: number;
+  ratePerMile?: number;
   flatRate?: number;
   hourlyRate?: number;
 }
@@ -62,6 +63,8 @@ export interface VehicleInput {
   vehicleType?: string;
   /** @minimum 0 */
   luggageCapacity?: number;
+  /** @minimum 0 */
+  ratePerMile?: number;
   /** @minimum 0 */
   flatRate?: number;
   /** @minimum 0 */
