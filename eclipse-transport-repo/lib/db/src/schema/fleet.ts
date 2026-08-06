@@ -13,6 +13,7 @@ export const fleetTable = pgTable("fleet", {
   amenities: text("amenities").array().notNull().default([]),
   vehicleType: text("vehicle_type").notNull().default(""),
   luggageCapacity: integer("luggage_capacity").notNull().default(0),
+  ratePerMile: real("rate_per_mile").notNull().default(0),
   flatRate: real("flat_rate").notNull().default(0),
   hourlyRate: real("hourly_rate").notNull().default(0),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
