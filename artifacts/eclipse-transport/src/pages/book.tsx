@@ -3,7 +3,7 @@ import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Layout } from "@/components/layout/Layout";
-import { GooglePlacesInput } from "@/components/GooglePlacesInput";
+import { GooglePlacesInput, type GooglePlaceSelection } from "@/components/GooglePlacesInput";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useCreateBooking, getListBookingsQueryKey } from "@workspace/api-client-react";
@@ -225,6 +225,11 @@ export default function Book() {
   const [paymentIntentId, setPaymentIntentId] = useState<string | null>(null);
   const [piLoading, setPiLoading]   = useState(false);
   const [piError, setPiError]       = useState<string | null>(null);
+  const [pickupPoint, setPickupPoint] = useState<GooglePlaceSelection | null>(null);
+  const [dropoffPoint, setDropoffPoint] = useState<GooglePlaceSelection | null>(null);
+  const [routeMiles, setRouteMiles] = useState<number | null>(null);
+  const [routeStatus, setRouteStatus] = useState<"idle" | "calculating" | "ready" | "error">("idle");
+  const [routeError, setRouteError] = useState<string | null>(null);
   const piCreated                   = useRef(false);
   const queryClient   = useQueryClient();
   const createBooking = useCreateBooking();
@@ -250,14 +255,61 @@ export default function Book() {
   const isAirport = tripType === "Airport Transfer";
   const vehicle   = vehicles.find(v => v.id === values.vehicleId);
 
+  useEffect(() => {
+    if (isHourly) {
+      setRouteMiles(null);
+      setRouteStatus("idle");
+      setRouteError(null);
+      return;
+    }
+
+    if (!pickupPoint || !dropoffPoint) {
+      setRouteMiles(null);
+      setRouteStatus("idle");
+      setRouteError(null);
+      return;
+    }
+
+    let cancelled = false;
+    setRouteMiles(null);
+    setRouteStatus("calculating");
+    setRouteError(null);
+
+    const service = new window.google.maps.DistanceMatrixService();
+    service.getDistanceMatrix(
+      {
+        origins: [{ lat: pickupPoint.lat, lng: pickupPoint.lng }],
+        destinations: [{ lat: dropoffPoint.lat, lng: dropoffPoint.lng }],
+        travelMode: window.google.maps.TravelMode.DRIVING,
+        unitSystem: window.google.maps.UnitSystem.IMPERIAL,
+      },
+      (response: any, status: string) => {
+        if (cancelled) return;
+        const element = response?.rows?.[0]?.elements?.[0];
+        if (status !== "OK" || element?.status !== "OK" || !element.distance?.value) {
+          setRouteStatus("error");
+          setRouteError("We couldn't calculate the driving distance. Please select both locations again.");
+          return;
+        }
+
+        setRouteMiles(element.distance.value / 1609.344);
+        setRouteStatus("ready");
+      },
+    );
+
+    return () => {
+      cancelled = true;
+    };
+  }, [dropoffPoint, isHourly, pickupPoint]);
+
   /* ── price ── */
   let baseRate = 0;
   let minimumApplied = false;
   if (vehicle) {
     if (isHourly) {
       baseRate = vehicle.hourlyRate * (values.duration || 3);
-    } else {
-      const mileRate = vehicle.ratePerMile * 10; /* default 10-mile estimate */
+    } else if (routeMiles !== null) {
+      const mileRate = vehicle.ratePerMile * routeMiles;
       if (mileRate < vehicle.minimumFare) {
         baseRate = vehicle.minimumFare;
         minimumApplied = true;
@@ -279,7 +331,11 @@ export default function Book() {
     let fields: (keyof BookingFormValues)[] = [];
     if (step === 2) {
       fields = ["pickupDate", "pickupTime", "pickupLocation"];
-      if (!isHourly && !isAirport) fields.push("dropoffLocation");
+      if (!isHourly) fields.push("dropoffLocation");
+      if (!isHourly && (routeMiles === null || routeStatus !== "ready")) {
+        setRouteError("Select both locations from the address suggestions so we can calculate the real driving distance.");
+        return;
+      }
     }
     if (step === 3 && !values.vehicleId) return;
     if (step === 4) fields = ["passengerName", "passengerEmail", "passengerPhone"];
@@ -310,6 +366,7 @@ export default function Book() {
           passengerName: values.passengerName || "Guest",
           serviceType:   values.tripType || "",
           pickupDate:    values.pickupDate || "",
+          routeMiles:    routeMiles?.toFixed(2) || "",
         },
       }),
     })
@@ -336,6 +393,7 @@ export default function Book() {
     if ((data.extraStops || 0) > 0) reqs.push(`${data.extraStops} extra stop(s) (+$${(data.extraStops || 0) * 15})`);
     if (data.specialInstructions)   reqs.push(`Notes: ${data.specialInstructions}`);
     if (data.flightNumber)          reqs.push(`Flight: ${data.airline || ""} ${data.flightNumber} / Terminal ${data.terminal || "TBD"}`);
+    if (routeMiles !== null)        reqs.push(`Driving distance: ${routeMiles.toFixed(1)} miles`);
     reqs.push(`Stripe Payment ID: ${piId}`);
 
     createBooking.mutate({
@@ -551,6 +609,7 @@ export default function Book() {
                                 <GooglePlacesInput
                                   value={field.value || ""}
                                   onChange={field.onChange}
+                                  onPlaceSelect={setPickupPoint}
                                   placeholder="Address, hotel, or airport terminal"
                                   className={`h-12 bg-gray-50 border-gray-200 rounded-xl ${errors.pickupLocation ? "border-red-400" : ""}`}
                                 />
@@ -571,12 +630,31 @@ export default function Book() {
                                   <GooglePlacesInput
                                     value={field.value || ""}
                                     onChange={field.onChange}
+                                    onPlaceSelect={setDropoffPoint}
                                     placeholder="Address, hotel, or venue"
                                     className={`h-12 bg-gray-50 border-gray-200 rounded-xl ${errors.dropoffLocation ? "border-red-400" : ""}`}
                                   />
                                 )}
                               />
                             </div>
+                          )}
+
+                          {!isHourly && (
+                            <div className={`rounded-xl px-3.5 py-3 text-xs ${
+                              routeStatus === "error"
+                                ? "bg-red-50 text-red-600"
+                                : routeStatus === "ready"
+                                  ? "bg-green-50 text-green-700"
+                                  : "bg-gray-50 text-gray-500"
+                            }`}>
+                              {routeStatus === "calculating" && "Calculating driving distance…"}
+                              {routeStatus === "ready" && routeMiles !== null && `${routeMiles.toFixed(1)} driving miles calculated for this route.`}
+                              {routeStatus === "error" && routeError}
+                              {routeStatus === "idle" && "Select both locations from the address suggestions to calculate your fare."}
+                            </div>
+                          )}
+                          {routeError && routeStatus !== "error" && (
+                            <p className="text-xs text-red-600">{routeError}</p>
                           )}
 
                           <Counter
@@ -833,7 +911,7 @@ export default function Book() {
                             <div className="mt-4 pt-4 border-t border-gray-100 space-y-2 text-sm">
                               {baseRate > 0 && (
                 <div className="flex justify-between text-gray-500">
-                  <span>{minimumApplied ? "Minimum fare" : "Rate (per mile)"}</span>
+                  <span>{minimumApplied ? "Minimum fare" : routeMiles !== null ? `Rate (${routeMiles.toFixed(1)} miles)` : "Rate"}</span>
                   <span>${baseRate}{minimumApplied && <span className="ml-1 text-[10px] font-bold text-amber-600 uppercase tracking-wide"> MIN</span>}</span>
                 </div>
               )}
@@ -871,7 +949,7 @@ export default function Book() {
                             </div>
                             <div className="mt-3 pt-3 border-t border-gray-100 space-y-1 text-xs text-gray-500">
                               <div className="flex justify-between">
-                                <span>{minimumApplied ? "Minimum fare" : "Rate (per mile)"}</span>
+                                <span>{minimumApplied ? "Minimum fare" : routeMiles !== null ? `Rate (${routeMiles.toFixed(1)} miles)` : "Rate"}</span>
                                 <span>${baseRate}{minimumApplied && <span className="ml-1 text-[10px] font-bold text-amber-600"> MIN</span>}</span>
                               </div>
                               {addonsTotal > 0 && <div className="flex justify-between"><span>Add-ons</span><span>+${addonsTotal}</span></div>}
@@ -1021,7 +1099,7 @@ export default function Book() {
                     <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-3">Price Estimate</p>
                     <div className="space-y-2 text-sm">
                       <div className="flex justify-between text-gray-600">
-                        <span>{minimumApplied ? "Minimum fare" : "Rate (per mile)"}</span>
+                        <span>{minimumApplied ? "Minimum fare" : routeMiles !== null ? `Rate (${routeMiles.toFixed(1)} miles)` : "Rate"}</span>
                         <span>${baseRate}{minimumApplied && <span className="ml-1 text-[10px] font-bold text-amber-600"> MIN</span>}</span>
                       </div>
                       {addonsTotal > 0 && <div className="flex justify-between text-gray-600"><span>Add-ons</span><span>+${addonsTotal}</span></div>}

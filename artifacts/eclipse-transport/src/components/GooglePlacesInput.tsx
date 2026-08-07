@@ -33,9 +33,16 @@ function loadGoogleMapsScript(apiKey: string): Promise<void> {
 interface GooglePlacesInputProps {
   value: string;
   onChange: (value: string) => void;
+  onPlaceSelect?: (place: GooglePlaceSelection | null) => void;
   placeholder?: string;
   className?: string;
   id?: string;
+}
+
+export interface GooglePlaceSelection {
+  address: string;
+  lat: number;
+  lng: number;
 }
 
 // Greater Los Angeles service area bounds
@@ -48,6 +55,7 @@ const LA_BOUNDS = {
 export function GooglePlacesInput({
   value,
   onChange,
+  onPlaceSelect,
   placeholder = "Enter location",
   className = "",
   id,
@@ -86,9 +94,17 @@ export function GooglePlacesInput({
     ac.addListener("place_changed", () => {
       const place = ac.getPlace();
       const address = place?.formatted_address || place?.name || "";
-      if (address) onChange(address);
+      const location = place?.geometry?.location;
+      if (address && location) {
+        onChange(address);
+        onPlaceSelect?.({
+          address,
+          lat: location.lat(),
+          lng: location.lng(),
+        });
+      }
     });
-  }, [isReady, onChange]);
+  }, [isReady, onChange, onPlaceSelect]);
 
   return (
     <input
@@ -96,6 +112,7 @@ export function GooglePlacesInput({
       id={id}
       type="text"
       defaultValue={value}
+      onInput={() => onPlaceSelect?.(null)}
       onBlur={(e) => onChange(e.target.value)}
       placeholder={placeholder}
       autoComplete="off"
