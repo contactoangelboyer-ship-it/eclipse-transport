@@ -87,6 +87,7 @@ router.post("/bookings", async (req, res): Promise<void> => {
       serviceType: parsed.data.serviceType,
       passengers: parsed.data.passengers ?? 1,
       specialRequests: parsed.data.specialRequests ?? null,
+      totalPrice: parsed.data.estimatedPrice ?? null,
       status: "pending",
     })
     .returning();

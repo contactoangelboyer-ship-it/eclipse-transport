@@ -73,6 +73,9 @@ const addons = [
   { id: "addonFlowers",      label: "Welcome Flowers",    desc: "Seasonal bouquet for arrivals & events",  price: 45 },
 ];
 
+const formatUsd = (amount: number) =>
+  amount.toLocaleString("en-US", { style: "currency", currency: "USD" });
+
 /* ─────────────────────────── schema ─────────────────────────── */
 
 const bookingSchema = z.object({
@@ -230,7 +233,7 @@ export default function Book() {
   const [routeMiles, setRouteMiles] = useState<number | null>(null);
   const [routeStatus, setRouteStatus] = useState<"idle" | "calculating" | "ready" | "error">("idle");
   const [routeError, setRouteError] = useState<string | null>(null);
-  const piCreated                   = useRef(false);
+  const paymentSignatureRef        = useRef<string | null>(null);
   const queryClient   = useQueryClient();
   const createBooking = useCreateBooking();
 
@@ -323,8 +326,22 @@ export default function Book() {
     (values.addonChildSeat  ? 20 : 0) +
     (values.addonFlowers    ? 45 : 0) +
     ((values.extraStops || 0) * 15);
-  const gratuity      = baseRate > 0 ? Math.round(baseRate * 0.20) : 0;
-  const totalEstimate = baseRate > 0 ? baseRate + addonsTotal + gratuity : 0;
+  const gratuity      = baseRate > 0 ? Math.round(baseRate * 0.20 * 100) / 100 : 0;
+  const totalEstimate = baseRate > 0
+    ? Math.round((baseRate + addonsTotal + gratuity) * 100) / 100
+    : 0;
+  const paymentSignature = [
+    totalEstimate,
+    values.passengerEmail,
+    values.tripType,
+    values.vehicleId,
+    values.duration,
+    routeMiles,
+    values.addonMeetGreet,
+    values.addonChildSeat,
+    values.addonFlowers,
+    values.extraStops,
+  ].join("|");
 
   /* ── navigation ── */
   const handleNext = async () => {
@@ -350,8 +367,11 @@ export default function Book() {
 
   /* ── Create Stripe payment intent when reaching step 5 ── */
   useEffect(() => {
-    if (step !== 5 || piCreated.current || totalEstimate <= 0) return;
-    piCreated.current = true;
+    if (step !== 5 || totalEstimate <= 0) return;
+    if (paymentSignatureRef.current === paymentSignature) return;
+    paymentSignatureRef.current = paymentSignature;
+    setClientSecret(null);
+    setPaymentIntentId(null);
     setPiLoading(true);
     setPiError(null);
 
@@ -370,7 +390,13 @@ export default function Book() {
         },
       }),
     })
-      .then(r => r.json())
+      .then(async r => {
+        const data = await r.json().catch(() => ({} as { clientSecret?: string; error?: string }));
+        if (!r.ok) {
+          throw new Error(data.error ?? `Payment setup failed (${r.status}).`);
+        }
+        return data;
+      })
       .then((data: { clientSecret?: string; error?: string }) => {
         if (data.clientSecret) {
           setClientSecret(data.clientSecret);
@@ -378,9 +404,12 @@ export default function Book() {
           setPiError(data.error ?? "Could not initialise payment.");
         }
       })
-      .catch(() => setPiError("Network error. Please check your connection."))
+      .catch((error: unknown) => {
+        paymentSignatureRef.current = null;
+        setPiError(error instanceof Error ? error.message : "Network error. Please check your connection.");
+      })
       .finally(() => setPiLoading(false));
-  }, [step, totalEstimate]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [paymentSignature, step, totalEstimate]); // eslint-disable-line react-hooks/exhaustive-deps
 
   /* ── Called after Stripe payment succeeds ── */
   const handlePaymentSuccess = (piId: string, data: BookingFormValues) => {
@@ -455,7 +484,7 @@ export default function Book() {
                   </div>
                   <div>
                     <p className="font-bold text-gray-900 text-sm">Payment Confirmed</p>
-                    <p className="text-xs text-gray-500">${totalEstimate} charged successfully via Stripe</p>
+                    <p className="text-xs text-gray-500">{formatUsd(totalEstimate)} charged successfully via Stripe</p>
                   </div>
                 </div>
                 {paymentIntentId && (
@@ -476,7 +505,7 @@ export default function Book() {
                   <div className="flex justify-between"><span className="text-gray-500">Date</span><span className="font-medium">{values.pickupDate} · {values.pickupTime}</span></div>
                   <div className="flex justify-between"><span className="text-gray-500">Passengers</span><span className="font-medium">{values.passengers}</span></div>
                   <div className="border-t border-gray-100 pt-3 flex justify-between font-bold text-base">
-                    <span>Total</span><span>${totalEstimate}</span>
+                    <span>Total</span><span>{formatUsd(totalEstimate)}</span>
                   </div>
                 </div>
               </div>
@@ -912,13 +941,13 @@ export default function Book() {
                               {baseRate > 0 && (
                 <div className="flex justify-between text-gray-500">
                   <span>{minimumApplied ? "Minimum fare" : routeMiles !== null ? `Rate (${routeMiles.toFixed(1)} miles)` : "Rate"}</span>
-                  <span>${baseRate}{minimumApplied && <span className="ml-1 text-[10px] font-bold text-amber-600 uppercase tracking-wide"> MIN</span>}</span>
+                   <span>{formatUsd(baseRate)}{minimumApplied && <span className="ml-1 text-[10px] font-bold text-amber-600 uppercase tracking-wide"> MIN</span>}</span>
                 </div>
               )}
-                              {addonsTotal > 0 && <div className="flex justify-between text-gray-500"><span>Add-ons</span><span>+${addonsTotal}</span></div>}
-                              {gratuity > 0 && <div className="flex justify-between text-gray-500"><span>Gratuity (20%)</span><span>+${gratuity}</span></div>}
+                              {addonsTotal > 0 && <div className="flex justify-between text-gray-500"><span>Add-ons</span><span>+{formatUsd(addonsTotal)}</span></div>}
+                              {gratuity > 0 && <div className="flex justify-between text-gray-500"><span>Gratuity (20%)</span><span>+{formatUsd(gratuity)}</span></div>}
                               <div className="flex justify-between font-bold text-base pt-2 border-t border-gray-100">
-                                <span>Total Estimate</span><span>${totalEstimate}</span>
+                                <span>Total Estimate</span><span>{formatUsd(totalEstimate)}</span>
                               </div>
                             </div>
                           )}
@@ -945,15 +974,15 @@ export default function Book() {
                           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
                             <div className="flex items-center justify-between">
                               <span className="text-sm font-medium text-gray-600">Total due today</span>
-                              <span className="text-2xl font-bold text-gray-900">${totalEstimate}</span>
+                              <span className="text-2xl font-bold text-gray-900">{formatUsd(totalEstimate)}</span>
                             </div>
                             <div className="mt-3 pt-3 border-t border-gray-100 space-y-1 text-xs text-gray-500">
                               <div className="flex justify-between">
                                 <span>{minimumApplied ? "Minimum fare" : routeMiles !== null ? `Rate (${routeMiles.toFixed(1)} miles)` : "Rate"}</span>
-                                <span>${baseRate}{minimumApplied && <span className="ml-1 text-[10px] font-bold text-amber-600"> MIN</span>}</span>
+                                <span>{formatUsd(baseRate)}{minimumApplied && <span className="ml-1 text-[10px] font-bold text-amber-600"> MIN</span>}</span>
                               </div>
-                              {addonsTotal > 0 && <div className="flex justify-between"><span>Add-ons</span><span>+${addonsTotal}</span></div>}
-                              {gratuity > 0 && <div className="flex justify-between"><span>Gratuity (20%)</span><span>+${gratuity}</span></div>}
+                              {addonsTotal > 0 && <div className="flex justify-between"><span>Add-ons</span><span>+{formatUsd(addonsTotal)}</span></div>}
+                              {gratuity > 0 && <div className="flex justify-between"><span>Gratuity (20%)</span><span>+{formatUsd(gratuity)}</span></div>}
                             </div>
                           </div>
                         )}
@@ -971,7 +1000,11 @@ export default function Book() {
                             <button
                               type="button"
                               className="mt-2 text-xs text-red-500 underline"
-                              onClick={() => { piCreated.current = false; setPiError(null); setStep(5); }}
+                              onClick={() => {
+                                paymentSignatureRef.current = null;
+                                setPiError(null);
+                                setStep(5);
+                              }}
                             >
                               Retry
                             </button>
@@ -1102,10 +1135,10 @@ export default function Book() {
                         <span>{minimumApplied ? "Minimum fare" : routeMiles !== null ? `Rate (${routeMiles.toFixed(1)} miles)` : "Rate"}</span>
                         <span>${baseRate}{minimumApplied && <span className="ml-1 text-[10px] font-bold text-amber-600"> MIN</span>}</span>
                       </div>
-                      {addonsTotal > 0 && <div className="flex justify-between text-gray-600"><span>Add-ons</span><span>+${addonsTotal}</span></div>}
-                      {gratuity > 0 && <div className="flex justify-between text-gray-600"><span>Gratuity (20%)</span><span>+${gratuity}</span></div>}
+                      {addonsTotal > 0 && <div className="flex justify-between text-gray-600"><span>Add-ons</span><span>+{formatUsd(addonsTotal)}</span></div>}
+                      {gratuity > 0 && <div className="flex justify-between text-gray-600"><span>Gratuity (20%)</span><span>+{formatUsd(gratuity)}</span></div>}
                       <div className="flex justify-between font-bold text-base pt-2 border-t border-gray-100 mt-2">
-                        <span>Total</span><span>${totalEstimate}</span>
+                        <span>Total</span><span>{formatUsd(totalEstimate)}</span>
                       </div>
                     </div>
                   </div>
@@ -1119,7 +1152,7 @@ export default function Book() {
                       <p className="text-xs font-bold text-gray-600 uppercase tracking-wide">Secure Payment</p>
                     </div>
                     <p className="text-xs text-gray-500">
-                      <strong className="text-gray-700">${totalEstimate}</strong> charged via Stripe — SSL encrypted.
+                      <strong className="text-gray-700">{formatUsd(totalEstimate)}</strong> charged via Stripe — SSL encrypted.
                     </p>
                   </div>
                 )}
@@ -1161,7 +1194,7 @@ export default function Book() {
                 {totalEstimate > 0 ? "Estimate" : STEPS[step - 1]}
               </p>
               <p className="text-lg font-bold text-gray-900">
-                {totalEstimate > 0 ? `$${totalEstimate}` : `Step ${step} of ${STEPS.length}`}
+                {totalEstimate > 0 ? formatUsd(totalEstimate) : `Step ${step} of ${STEPS.length}`}
               </p>
             </div>
           </div>
