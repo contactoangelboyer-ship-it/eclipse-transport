@@ -1133,7 +1133,7 @@ export default function Book() {
                     <div className="space-y-2 text-sm">
                       <div className="flex justify-between text-gray-600">
                         <span>{minimumApplied ? "Minimum fare" : routeMiles !== null ? `Rate (${routeMiles.toFixed(1)} miles)` : "Rate"}</span>
-                        <span>${baseRate}{minimumApplied && <span className="ml-1 text-[10px] font-bold text-amber-600"> MIN</span>}</span>
+                        <span>{formatUsd(baseRate)}{minimumApplied && <span className="ml-1 text-[10px] font-bold text-amber-600"> MIN</span>}</span>
                       </div>
                       {addonsTotal > 0 && <div className="flex justify-between text-gray-600"><span>Add-ons</span><span>+{formatUsd(addonsTotal)}</span></div>}
                       {gratuity > 0 && <div className="flex justify-between text-gray-600"><span>Gratuity (20%)</span><span>+{formatUsd(gratuity)}</span></div>}

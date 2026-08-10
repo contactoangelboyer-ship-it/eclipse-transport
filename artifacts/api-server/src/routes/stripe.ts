@@ -23,7 +23,11 @@ router.post("/stripe/payment-intent", async (req, res): Promise<void> => {
       metadata?: Record<string, string>;
     };
 
-    if (!amount || typeof amount !== "number" || amount <= 0) {
+    if (
+      typeof amount !== "number" ||
+      !Number.isFinite(amount) ||
+      amount <= 0
+    ) {
       res.status(400).json({ error: "Invalid amount. Must be a positive number." });
       return;
     }
