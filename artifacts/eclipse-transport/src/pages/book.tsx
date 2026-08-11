@@ -6,7 +6,12 @@ import { Layout } from "@/components/layout/Layout";
 import { GooglePlacesInput, type GooglePlaceSelection } from "@/components/GooglePlacesInput";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { useCreateBooking, getListBookingsQueryKey } from "@workspace/api-client-react";
+import { useCreateBooking, getListBookingsQueryKey, type BookingInput } from "@workspace/api-client-react";
+import {
+  BOOKING_ADDON_PRICES,
+  BOOKING_VEHICLES,
+  calculateBookingPrice,
+} from "@workspace/booking-pricing";
 import { useQueryClient } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -29,25 +34,25 @@ import eclipseLogoTransparent from "@assets/eclipse-logo-new-transparent.png";
 const vehicles = [
   {
     id: "suburban", name: "Chevrolet Suburban", model: "2025 Suburban S",
-    category: "SUV", pax: 7, bags: 6, ratePerMile: 6.20, hourlyRate: 80, minimumFare: 90,
+    category: "SUV", pax: 7, bags: 6, ratePerMile: BOOKING_VEHICLES.suburban.ratePerMile, hourlyRate: BOOKING_VEHICLES.suburban.hourlyRate, minimumFare: BOOKING_VEHICLES.suburban.minimumFare,
     image: suburbanImg,
     amenities: ["High-speed Wi-Fi", "Privacy glass", "Climate control", "Bottled water"],
   },
   {
     id: "escalade", name: "Cadillac Escalade ESV", model: "2024 Escalade ESV",
-    category: "SUV", pax: 7, bags: 6, ratePerMile: 7.15, hourlyRate: 95, minimumFare: 100,
+    category: "SUV", pax: 7, bags: 6, ratePerMile: BOOKING_VEHICLES.escalade.ratePerMile, hourlyRate: BOOKING_VEHICLES.escalade.hourlyRate, minimumFare: BOOKING_VEHICLES.escalade.minimumFare,
     image: escaladeImg,
     amenities: ["Panoramic sunroof", "Premium audio", "Heated seats", "Privacy glass"],
   },
   {
     id: "lincoln", name: "Lincoln Continental", model: "2024 Continental",
-    category: "Sedan", pax: 3, bags: 3, ratePerMile: 5.60, hourlyRate: 65, minimumFare: 80,
+    category: "Sedan", pax: 3, bags: 3, ratePerMile: BOOKING_VEHICLES.lincoln.ratePerMile, hourlyRate: BOOKING_VEHICLES.lincoln.hourlyRate, minimumFare: BOOKING_VEHICLES.lincoln.minimumFare,
     image: lincolnImg,
     amenities: ["Executive rear seating", "Noise cancellation", "Rear climate control"],
   },
   {
     id: "mercedes", name: "Mercedes-Benz S-Class", model: "2024 S-Class",
-    category: "Sedan", pax: 3, bags: 3, ratePerMile: 5.60, hourlyRate: 75, minimumFare: 80,
+    category: "Sedan", pax: 3, bags: 3, ratePerMile: BOOKING_VEHICLES.mercedes.ratePerMile, hourlyRate: BOOKING_VEHICLES.mercedes.hourlyRate, minimumFare: BOOKING_VEHICLES.mercedes.minimumFare,
     image: mercedesImg,
     amenities: ["Ambient lighting", "Massaging seats", "Burmester audio", "Rear screens"],
   },
@@ -67,10 +72,10 @@ const tripTypes = [
 ];
 
 const addons = [
-  { id: "addonMeetGreet",    label: "Meet & Greet",      desc: "Chauffeur meets you inside the terminal", price: 25 },
+  { id: "addonMeetGreet",    label: "Meet & Greet",      desc: "Chauffeur meets you inside the terminal", price: BOOKING_ADDON_PRICES.meetGreet },
   { id: "addonFlightMonitor",label: "Flight Monitoring",  desc: "Real-time tracking, no extra wait fees",  price: 0, included: true },
-  { id: "addonChildSeat",    label: "Child Seat",         desc: "Certified child safety seat",             price: 20 },
-  { id: "addonFlowers",      label: "Welcome Flowers",    desc: "Seasonal bouquet for arrivals & events",  price: 45 },
+  { id: "addonChildSeat",    label: "Child Seat",         desc: "Certified child safety seat",             price: BOOKING_ADDON_PRICES.childSeat },
+  { id: "addonFlowers",      label: "Welcome Flowers",    desc: "Seasonal bouquet for arrivals & events",  price: BOOKING_ADDON_PRICES.flowers },
 ];
 
 const formatUsd = (amount: number) =>
@@ -80,27 +85,35 @@ const formatUsd = (amount: number) =>
 
 const bookingSchema = z.object({
   tripType:           z.string().min(1),
-  pickupDate:         z.string().optional(),
-  pickupTime:         z.string().optional(),
-  pickupLocation:     z.string().optional(),
+  pickupDate:         z.string().trim().min(1, "Select a pickup date"),
+  pickupTime:         z.string().trim().min(1, "Select a pickup time"),
+  pickupLocation:     z.string().trim().min(1, "Select a pickup location"),
   dropoffLocation:    z.string().optional(),
   flightNumber:       z.string().optional(),
   airline:            z.string().optional(),
   terminal:           z.string().optional(),
-  duration:           z.coerce.number().optional(),
+  duration:           z.coerce.number().min(1).max(12).optional(),
   returnTrip:         z.boolean().optional(),
   passengers:         z.coerce.number().min(1).max(14),
   luggage:            z.coerce.number().min(0).max(10),
   vehicleId:          z.string().optional(),
-  passengerName:      z.string().optional(),
-  passengerEmail:     z.string().optional(),
-  passengerPhone:     z.string().optional(),
+  passengerName:      z.string().trim().min(2, "Enter your full name"),
+  passengerEmail:     z.string().trim().email("Enter a valid email address"),
+  passengerPhone:     z.string().trim().min(7, "Enter a valid phone number"),
   addonMeetGreet:     z.boolean().optional(),
   addonChildSeat:     z.boolean().optional(),
   addonFlowers:       z.boolean().optional(),
   addonFlightMonitor: z.boolean().optional(),
-  extraStops:         z.coerce.number().optional(),
+  extraStops:         z.coerce.number().min(0).max(10).optional(),
   specialInstructions:z.string().optional(),
+}).superRefine((data, ctx) => {
+  if (data.tripType !== "By the Hour" && !data.dropoffLocation?.trim()) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["dropoffLocation"],
+      message: "Select a drop-off location",
+    });
+  }
 });
 
 type BookingFormValues = z.infer<typeof bookingSchema>;
@@ -225,6 +238,7 @@ export default function Book() {
   const [step, setStep]             = useState(1);
   const [isSuccess, setIsSuccess]   = useState(false);
   const [clientSecret, setClientSecret]   = useState<string | null>(null);
+  const [paymentAmount, setPaymentAmount] = useState<number | null>(null);
   const [paymentIntentId, setPaymentIntentId] = useState<string | null>(null);
   const [piLoading, setPiLoading]   = useState(false);
   const [piError, setPiError]       = useState<string | null>(null);
@@ -233,6 +247,8 @@ export default function Book() {
   const [routeMiles, setRouteMiles] = useState<number | null>(null);
   const [routeStatus, setRouteStatus] = useState<"idle" | "calculating" | "ready" | "error">("idle");
   const [routeError, setRouteError] = useState<string | null>(null);
+  const [bookingError, setBookingError] = useState<string | null>(null);
+  const [pendingBooking, setPendingBooking] = useState<BookingInput | null>(null);
   const paymentSignatureRef        = useRef<string | null>(null);
   const queryClient   = useQueryClient();
   const createBooking = useCreateBooking();
@@ -306,30 +322,18 @@ export default function Book() {
   }, [dropoffPoint, isHourly, pickupPoint]);
 
   /* ── price ── */
-  let baseRate = 0;
-  let minimumApplied = false;
-  if (vehicle) {
-    if (isHourly) {
-      baseRate = vehicle.hourlyRate * (values.duration || 3);
-    } else if (routeMiles !== null) {
-      const mileRate = vehicle.ratePerMile * routeMiles;
-      if (mileRate < vehicle.minimumFare) {
-        baseRate = vehicle.minimumFare;
-        minimumApplied = true;
-      } else {
-        baseRate = mileRate;
-      }
-    }
-  }
-  const addonsTotal =
-    (values.addonMeetGreet  ? 25 : 0) +
-    (values.addonChildSeat  ? 20 : 0) +
-    (values.addonFlowers    ? 45 : 0) +
-    ((values.extraStops || 0) * 15);
-  const gratuity      = baseRate > 0 ? Math.round(baseRate * 0.20 * 100) / 100 : 0;
-  const totalEstimate = baseRate > 0
-    ? Math.round((baseRate + addonsTotal + gratuity) * 100) / 100
-    : 0;
+  const priceBreakdown = calculateBookingPrice({
+    vehicleId: values.vehicleId || "",
+    tripType,
+    duration: values.duration,
+    routeMiles,
+    addonMeetGreet: values.addonMeetGreet,
+    addonChildSeat: values.addonChildSeat,
+    addonFlowers: values.addonFlowers,
+    extraStops: values.extraStops,
+  });
+  const { baseRate, addonsTotal, gratuity, total: totalEstimate, minimumApplied } = priceBreakdown;
+  const displayTotal = paymentAmount ?? totalEstimate;
   const paymentSignature = [
     totalEstimate,
     values.passengerEmail,
@@ -375,12 +379,26 @@ export default function Book() {
     setPiLoading(true);
     setPiError(null);
 
-    const apiBase = (import.meta.env.BASE_URL ?? "/").replace(/\/$/, "");
+    const apiBase = (
+      (import.meta.env.VITE_API_BASE_URL as string | undefined) ||
+      import.meta.env.BASE_URL ||
+      "/"
+    ).replace(/\/$/, "");
     fetch(`${apiBase}/api/stripe/payment-intent`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         amount: totalEstimate,
+        quote: {
+          vehicleId: values.vehicleId || "",
+          tripType: values.tripType,
+          duration: values.duration,
+          routeMiles,
+          addonMeetGreet: values.addonMeetGreet,
+          addonChildSeat: values.addonChildSeat,
+          addonFlowers: values.addonFlowers,
+          extraStops: values.extraStops,
+        },
         customerEmail: values.passengerEmail,
         metadata: {
           passengerName: values.passengerName || "Guest",
@@ -397,9 +415,10 @@ export default function Book() {
         }
         return data;
       })
-      .then((data: { clientSecret?: string; error?: string }) => {
+      .then((data: { clientSecret?: string; amount?: number; error?: string }) => {
         if (data.clientSecret) {
           setClientSecret(data.clientSecret);
+          setPaymentAmount(typeof data.amount === "number" ? data.amount : totalEstimate);
         } else {
           setPiError(data.error ?? "Could not initialise payment.");
         }
@@ -410,6 +429,24 @@ export default function Book() {
       })
       .finally(() => setPiLoading(false));
   }, [paymentSignature, step, totalEstimate]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const saveBooking = (bookingData: BookingInput) => {
+    setBookingError(null);
+    createBooking.mutate({ data: bookingData }, {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: getListBookingsQueryKey() });
+        setIsSuccess(true);
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      },
+      onError: (error) => {
+        setBookingError(
+          error instanceof Error
+            ? error.message
+            : "Your payment was received, but we could not save the reservation. Please call dispatch with your payment reference.",
+        );
+      },
+    });
+  };
 
   /* ── Called after Stripe payment succeeds ── */
   const handlePaymentSuccess = (piId: string, data: BookingFormValues) => {
@@ -425,29 +462,23 @@ export default function Book() {
     if (routeMiles !== null)        reqs.push(`Driving distance: ${routeMiles.toFixed(1)} miles`);
     reqs.push(`Stripe Payment ID: ${piId}`);
 
-    createBooking.mutate({
-      data: {
-        passengerName:   data.passengerName  || "Guest",
-        passengerEmail:  data.passengerEmail || "",
-        passengerPhone:  data.passengerPhone || "",
-        pickupDate:      data.pickupDate     || "",
-        pickupTime:      data.pickupTime     || "",
-        pickupLocation:  data.pickupLocation || "",
-        dropoffLocation: isHourly ? `As directed (${data.duration} hours)` : (data.dropoffLocation || "TBD"),
-        passengers:      data.passengers,
-        luggage:         data.luggage,
-        vehicleType:     vehicle?.name || data.vehicleId || "",
-        serviceType:     data.tripType,
-        specialRequests: reqs.join(" | "),
-        estimatedPrice:  totalEstimate,
-      }
-    }, {
-      onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: getListBookingsQueryKey() });
-        setIsSuccess(true);
-        window.scrollTo({ top: 0, behavior: "smooth" });
-      },
-    });
+    const bookingData: BookingInput = {
+      passengerName:   data.passengerName.trim(),
+      passengerEmail:  data.passengerEmail.trim(),
+      passengerPhone:  data.passengerPhone.trim(),
+      pickupDate:      data.pickupDate,
+      pickupTime:      data.pickupTime,
+      pickupLocation:  data.pickupLocation,
+      dropoffLocation: isHourly ? `As directed (${data.duration} hours)` : data.dropoffLocation!.trim(),
+      passengers:      data.passengers,
+      luggage:         data.luggage,
+      vehicleType:     vehicle?.name || data.vehicleId || "",
+      serviceType:     data.tripType,
+      specialRequests: reqs.join(" | "),
+      estimatedPrice:  displayTotal,
+    };
+    setPendingBooking(bookingData);
+    saveBooking(bookingData);
   };
 
   /* ── Legacy onSubmit (kept for form handleSubmit compatibility) ── */
@@ -484,7 +515,7 @@ export default function Book() {
                   </div>
                   <div>
                     <p className="font-bold text-gray-900 text-sm">Payment Confirmed</p>
-                    <p className="text-xs text-gray-500">{formatUsd(totalEstimate)} charged successfully via Stripe</p>
+                    <p className="text-xs text-gray-500">{formatUsd(displayTotal)} charged successfully via Stripe</p>
                   </div>
                 </div>
                 {paymentIntentId && (
@@ -505,7 +536,7 @@ export default function Book() {
                   <div className="flex justify-between"><span className="text-gray-500">Date</span><span className="font-medium">{values.pickupDate} · {values.pickupTime}</span></div>
                   <div className="flex justify-between"><span className="text-gray-500">Passengers</span><span className="font-medium">{values.passengers}</span></div>
                   <div className="border-t border-gray-100 pt-3 flex justify-between font-bold text-base">
-                    <span>Total</span><span>{formatUsd(totalEstimate)}</span>
+                    <span>Total</span><span>{formatUsd(displayTotal)}</span>
                   </div>
                 </div>
               </div>
@@ -974,7 +1005,7 @@ export default function Book() {
                           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
                             <div className="flex items-center justify-between">
                               <span className="text-sm font-medium text-gray-600">Total due today</span>
-                              <span className="text-2xl font-bold text-gray-900">{formatUsd(totalEstimate)}</span>
+                              <span className="text-2xl font-bold text-gray-900">{formatUsd(displayTotal)}</span>
                             </div>
                             <div className="mt-3 pt-3 border-t border-gray-100 space-y-1 text-xs text-gray-500">
                               <div className="flex justify-between">
@@ -1010,10 +1041,25 @@ export default function Book() {
                             </button>
                           </div>
                         )}
+                        {bookingError && (
+                          <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4">
+                            <p className="text-amber-800 text-sm font-medium">{bookingError}</p>
+                            {pendingBooking && (
+                              <button
+                                type="button"
+                                className="mt-3 text-xs font-semibold text-amber-800 underline"
+                                onClick={() => saveBooking(pendingBooking)}
+                                disabled={createBooking.isPending}
+                              >
+                                {createBooking.isPending ? "Saving reservation…" : "Try saving reservation again"}
+                              </button>
+                            )}
+                          </div>
+                        )}
                         {clientSecret && !piLoading && (
                           <StripeCheckout
                             clientSecret={clientSecret}
-                            amount={totalEstimate}
+                            amount={displayTotal}
                             onSuccess={(piId) => handlePaymentSuccess(piId, values as BookingFormValues)}
                             onError={(msg) => setPiError(msg)}
                           />
@@ -1138,7 +1184,7 @@ export default function Book() {
                       {addonsTotal > 0 && <div className="flex justify-between text-gray-600"><span>Add-ons</span><span>+{formatUsd(addonsTotal)}</span></div>}
                       {gratuity > 0 && <div className="flex justify-between text-gray-600"><span>Gratuity (20%)</span><span>+{formatUsd(gratuity)}</span></div>}
                       <div className="flex justify-between font-bold text-base pt-2 border-t border-gray-100 mt-2">
-                        <span>Total</span><span>{formatUsd(totalEstimate)}</span>
+                        <span>Total</span><span>{formatUsd(displayTotal)}</span>
                       </div>
                     </div>
                   </div>
@@ -1152,7 +1198,7 @@ export default function Book() {
                       <p className="text-xs font-bold text-gray-600 uppercase tracking-wide">Secure Payment</p>
                     </div>
                     <p className="text-xs text-gray-500">
-                      <strong className="text-gray-700">{formatUsd(totalEstimate)}</strong> charged via Stripe — SSL encrypted.
+                      <strong className="text-gray-700">{formatUsd(displayTotal)}</strong> charged via Stripe — SSL encrypted.
                     </p>
                   </div>
                 )}
@@ -1194,7 +1240,7 @@ export default function Book() {
                 {totalEstimate > 0 ? "Estimate" : STEPS[step - 1]}
               </p>
               <p className="text-lg font-bold text-gray-900">
-                {totalEstimate > 0 ? formatUsd(totalEstimate) : `Step ${step} of ${STEPS.length}`}
+                {totalEstimate > 0 ? formatUsd(displayTotal) : `Step ${step} of ${STEPS.length}`}
               </p>
             </div>
           </div>

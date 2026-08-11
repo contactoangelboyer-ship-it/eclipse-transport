@@ -173,6 +173,9 @@ importers:
       '@workspace/api-zod':
         specifier: workspace:*
         version: link:../../lib/api-zod
+      '@workspace/booking-pricing':
+        specifier: workspace:*
+        version: link:../../lib/booking-pricing
       '@workspace/db':
         specifier: workspace:*
         version: link:../../lib/db
@@ -358,6 +361,9 @@ importers:
       '@workspace/api-client-react':
         specifier: workspace:*
         version: link:../../lib/api-client-react
+      '@workspace/booking-pricing':
+        specifier: workspace:*
+        version: link:../../lib/booking-pricing
       class-variance-authority:
         specifier: 'catalog:'
         version: 0.7.1
@@ -631,6 +637,8 @@ importers:
       zod:
         specifier: 'catalog:'
         version: 3.25.76
+
+  lib/booking-pricing: {}
 
   lib/db:
     dependencies:
