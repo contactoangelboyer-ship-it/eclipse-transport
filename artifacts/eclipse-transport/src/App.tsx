@@ -4,12 +4,6 @@ import { Toaster } from '@/components/ui/toaster';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { Route, Switch, Router as WouterRouter } from 'wouter';
 import { initAdminAuth } from '@/lib/admin-auth';
-import { setBaseUrl } from '@workspace/api-client-react';
-
-// Set the API base URL immediately at module load time so it is ready
-// before any component mounts and makes API calls.
-const _apiBase = import.meta.env.VITE_API_BASE_URL as string | undefined;
-if (_apiBase) setBaseUrl(_apiBase);
 
 import Home from '@/pages/home';
 import Services from '@/pages/services';

@@ -1,5 +1,0 @@
-{
-  "$schema": "https://openapi.vercel.sh/vercel.json",
-  "installCommand": "cd ../.. && corepack enable pnpm && pnpm install --no-frozen-lockfile",
-  "buildCommand": "echo 'Serverless API - no static build required'"
-}

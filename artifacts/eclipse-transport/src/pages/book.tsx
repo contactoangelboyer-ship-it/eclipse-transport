@@ -379,12 +379,7 @@ export default function Book() {
     setPiLoading(true);
     setPiError(null);
 
-    const apiBase = (
-      (import.meta.env.VITE_API_BASE_URL as string | undefined) ||
-      import.meta.env.BASE_URL ||
-      "/"
-    ).replace(/\/$/, "");
-    fetch(`${apiBase}/api/stripe/payment-intent`, {
+    fetch("/api/stripe/payment-intent", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
