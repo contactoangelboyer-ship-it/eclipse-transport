@@ -3,6 +3,7 @@ import cors from "cors";
 import pinoHttp from "pino-http";
 import router from "./routes";
 import { logger } from "./lib/logger";
+import { ensureDatabaseSchema } from "./lib/database-init";
 
 const app: Express = express();
 
@@ -28,6 +29,22 @@ app.use(
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+app.use("/api", async (req, res, next) => {
+  // Health checks must remain available while a database connection is starting.
+  if (req.path === "/healthz") {
+    next();
+    return;
+  }
+
+  try {
+    await ensureDatabaseSchema();
+    next();
+  } catch (error) {
+    logger.error({ err: error }, "Database initialization failed");
+    res.status(503).json({ error: "Reservation service is temporarily unavailable. Please try again shortly." });
+  }
+});
 
 app.use("/api", router);
 
