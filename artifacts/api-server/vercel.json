@@ -3,10 +3,10 @@
   "installCommand": "cd ../.. && corepack enable pnpm && pnpm install --frozen-lockfile",
   "buildCommand": "pnpm run build",
   "outputDirectory": "dist",
-  "routes": [
+  "rewrites": [
     {
-      "src": "/(.*)",
-      "dest": "/vercel.mjs"
+      "source": "/(.*)",
+      "destination": "/vercel.mjs"
     }
   ]
 }
