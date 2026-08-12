@@ -18,6 +18,18 @@ import {
 
 const router: IRouter = Router();
 
+/** Convert Date objects returned by Drizzle to ISO strings so Zod validators don't fail. */
+function serializeBooking(booking: typeof bookingsTable.$inferSelect) {
+  return {
+    ...booking,
+    createdAt: booking.createdAt instanceof Date ? booking.createdAt.toISOString() : booking.createdAt,
+    updatedAt: booking.updatedAt instanceof Date ? (booking.updatedAt as Date).toISOString() : booking.updatedAt,
+    pickupDate: typeof booking.pickupDate === "object" && booking.pickupDate !== null
+      ? (booking.pickupDate as unknown as Date).toISOString().slice(0, 10)
+      : booking.pickupDate,
+  };
+}
+
 // Summary must come before /:id to avoid conflict
 router.get("/bookings/summary", async (req, res): Promise<void> => {
   const rows = await db
@@ -64,7 +76,7 @@ router.get("/bookings", async (req, res): Promise<void> => {
     rows = await db.select().from(bookingsTable).orderBy(bookingsTable.createdAt);
   }
 
-  res.json(ListBookingsResponse.parse(rows));
+  res.json(ListBookingsResponse.parse(rows.map(serializeBooking)));
 });
 
 router.post("/bookings", async (req, res): Promise<void> => {
@@ -92,7 +104,7 @@ router.post("/bookings", async (req, res): Promise<void> => {
     })
     .returning();
 
-  res.status(201).json(CreateBookingResponse.parse(booking));
+  res.status(201).json(CreateBookingResponse.parse(serializeBooking(booking)));
 });
 
 router.get("/bookings/:id", async (req, res): Promise<void> => {
@@ -112,7 +124,7 @@ router.get("/bookings/:id", async (req, res): Promise<void> => {
     return;
   }
 
-  res.json(GetBookingResponse.parse(booking));
+  res.json(GetBookingResponse.parse(serializeBooking(booking)));
 });
 
 router.patch("/bookings/:id", async (req, res): Promise<void> => {
@@ -144,7 +156,7 @@ router.patch("/bookings/:id", async (req, res): Promise<void> => {
     return;
   }
 
-  res.json(UpdateBookingResponse.parse(booking));
+  res.json(UpdateBookingResponse.parse(serializeBooking(booking)));
 });
 
 router.patch("/bookings/:id/cancel", async (req, res): Promise<void> => {
@@ -165,7 +177,7 @@ router.patch("/bookings/:id/cancel", async (req, res): Promise<void> => {
     return;
   }
 
-  res.json(CancelBookingResponse.parse(booking));
+  res.json(CancelBookingResponse.parse(serializeBooking(booking)));
 });
 
 export default router;
