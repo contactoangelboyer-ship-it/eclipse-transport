@@ -5,8 +5,11 @@ import { calculateBookingPrice, type BookingPriceInput } from "@workspace/bookin
 const router: IRouter = Router();
 
 function getStripeClient(): Stripe {
-  const key = process.env.STRIPE_SECRET_KEY;
+  const key = process.env.STRIPE_SECRET_KEY?.trim();
   if (!key) throw new Error("STRIPE_SECRET_KEY is not configured");
+  if (!key.startsWith("sk_")) {
+    throw new Error("STRIPE_SECRET_KEY must be a Stripe secret key (sk_test_... or sk_live_...).");
+  }
   return new Stripe(key, { apiVersion: "2025-01-27.acacia" as any });
 }
 
@@ -46,9 +49,9 @@ router.post("/stripe/payment-intent", async (req, res): Promise<void> => {
       return;
     }
 
-    const stripeKey = process.env.STRIPE_SECRET_KEY;
-    if (!stripeKey) {
-      res.status(503).json({ error: "Online payments are temporarily unavailable. Please call dispatch to complete your reservation." });
+    const stripeKey = process.env.STRIPE_SECRET_KEY?.trim();
+    if (!stripeKey || !stripeKey.startsWith("sk_")) {
+      res.status(503).json({ error: "Stripe server configuration is missing or invalid. Please contact dispatch." });
       return;
     }
 
