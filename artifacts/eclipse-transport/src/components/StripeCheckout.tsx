@@ -125,6 +125,14 @@ export function StripeCheckout({
   onSuccess: (paymentIntentId: string) => void;
   onError: (msg: string) => void;
 }) {
+  if (!publishableKey.startsWith("pk_")) {
+    return (
+      <div role="alert" className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+        Stripe is not configured correctly. Use a publishable key starting with pk_test_ or pk_live_.
+      </div>
+    );
+  }
+
   return (
     <Elements
       stripe={stripePromise}
