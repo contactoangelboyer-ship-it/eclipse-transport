@@ -238,6 +238,7 @@ export default function Book() {
   const [step, setStep]             = useState(1);
   const [isSuccess, setIsSuccess]   = useState(false);
   const [clientSecret, setClientSecret]   = useState<string | null>(null);
+  const [stripePublishableKey, setStripePublishableKey] = useState<string | null>(null);
   const [paymentAmount, setPaymentAmount] = useState<number | null>(null);
   const [paymentIntentId, setPaymentIntentId] = useState<string | null>(null);
   const [piLoading, setPiLoading]   = useState(false);
@@ -379,44 +380,49 @@ export default function Book() {
     setPiLoading(true);
     setPiError(null);
 
-    fetch("/api/stripe/payment-intent", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        amount: totalEstimate,
-        quote: {
-          vehicleId: values.vehicleId || "",
-          tripType: values.tripType,
-          duration: values.duration,
-          routeMiles,
-          addonMeetGreet: values.addonMeetGreet,
-          addonChildSeat: values.addonChildSeat,
-          addonFlowers: values.addonFlowers,
-          extraStops: values.extraStops,
-        },
-        customerEmail: values.passengerEmail,
-        metadata: {
-          passengerName: values.passengerName || "Guest",
-          serviceType:   values.tripType || "",
-          pickupDate:    values.pickupDate || "",
-          routeMiles:    routeMiles?.toFixed(2) || "",
-        },
-      }),
-    })
-      .then(async r => {
-        const data = await r.json().catch(() => ({} as { clientSecret?: string; error?: string }));
-        if (!r.ok) {
-          throw new Error(data.error ?? `Payment setup failed (${r.status}).`);
-        }
-        return data;
-      })
-      .then((data: { clientSecret?: string; amount?: number; error?: string }) => {
-        if (data.clientSecret) {
-          setClientSecret(data.clientSecret);
-          setPaymentAmount(typeof data.amount === "number" ? data.amount : totalEstimate);
-        } else {
-          setPiError(data.error ?? "Could not initialise payment.");
-        }
+    const apiBase = (import.meta.env.BASE_URL ?? "/").replace(/\/$/, "");
+    const readJson = async <T,>(response: Response): Promise<T> => {
+      const data = (await response.json()) as T & { error?: string };
+      if (!response.ok) {
+        throw new Error(data.error ?? `Payment setup failed (${response.status}).`);
+      }
+      return data;
+    };
+
+    fetch(`${apiBase}/api/stripe/config`)
+      .then(response => readJson<{ publishableKey: string }>(response))
+      .then(config =>
+        fetch(`${apiBase}/api/stripe/payment-intent`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            amount: totalEstimate,
+            quote: {
+              vehicleId: values.vehicleId || "",
+              tripType: values.tripType,
+              duration: values.duration,
+              routeMiles,
+              addonMeetGreet: values.addonMeetGreet,
+              addonChildSeat: values.addonChildSeat,
+              addonFlowers: values.addonFlowers,
+              extraStops: values.extraStops,
+            },
+            customerEmail: values.passengerEmail,
+            metadata: {
+              passengerName: values.passengerName || "Guest",
+              serviceType:   values.tripType || "",
+              pickupDate:    values.pickupDate || "",
+              routeMiles:    routeMiles?.toFixed(2) || "",
+            },
+          }),
+        })
+          .then(response => readJson<{ clientSecret: string; amount?: number }>(response))
+          .then(data => ({ config, data })),
+      )
+      .then(({ config, data }) => {
+        setStripePublishableKey(config.publishableKey);
+        setClientSecret(data.clientSecret);
+        setPaymentAmount(typeof data.amount === "number" ? data.amount : totalEstimate);
       })
       .catch((error: unknown) => {
         paymentSignatureRef.current = null;
@@ -1054,6 +1060,7 @@ export default function Book() {
                         {clientSecret && !piLoading && (
                           <StripeCheckout
                             clientSecret={clientSecret}
+                            publishableKey={stripePublishableKey ?? ""}
                             amount={displayTotal}
                             onSuccess={(piId) => handlePaymentSuccess(piId, values as BookingFormValues)}
                             onError={(msg) => setPiError(msg)}

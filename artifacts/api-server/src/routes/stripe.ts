@@ -4,14 +4,28 @@ import { calculateBookingPrice, type BookingPriceInput } from "@workspace/bookin
 
 const router: IRouter = Router();
 
-function getConfiguredStripeKey(): string | null {
-  const rawKey = process.env.STRIPE_SECRET_KEY;
-  if (!rawKey) return null;
+const SECRET_KEY_PATTERN = /^(sk|rk)_(test|live)_[A-Za-z0-9]+$/;
+const PUBLISHABLE_KEY_PATTERN = /^pk_(test|live)_[A-Za-z0-9]+$/;
+
+function normalizeEnvValue(value: string | undefined): string {
+  if (!value) return "";
 
   // Vercel values are occasionally pasted with surrounding quotes or a
   // trailing newline. Normalize those without ever logging the secret.
-  const key = rawKey.trim().replace(/^(['"])|(['"])$/g, "");
-  return key.startsWith("sk_test_") || key.startsWith("sk_live_") ? key : null;
+  return value.trim().replace(/^(['"])|(['"])$/g, "");
+}
+
+function getConfiguredStripeKey(): string | null {
+  const key = normalizeEnvValue(process.env.STRIPE_SECRET_KEY);
+  return SECRET_KEY_PATTERN.test(key) ? key : null;
+}
+
+function getConfiguredPublishableKey(): string | null {
+  const key = normalizeEnvValue(
+    process.env.STRIPE_PUBLISHABLE_KEY ??
+      process.env.VITE_STRIPE_PUBLISHABLE_KEY,
+  );
+  return PUBLISHABLE_KEY_PATTERN.test(key) ? key : null;
 }
 
 function getStripeClient(): Stripe {
@@ -19,6 +33,26 @@ function getStripeClient(): Stripe {
   if (!key) throw new Error("Stripe server configuration is missing or invalid.");
   return new Stripe(key, { apiVersion: "2025-01-27.acacia" as any });
 }
+
+/**
+ * GET /api/stripe/config
+ * Returns only the publishable key needed by Stripe.js.
+ *
+ * The browser must never receive STRIPE_SECRET_KEY. Keeping this lookup on
+ * the API also means the same Vercel environment configuration is used by
+ * both the web project and the API project.
+ */
+router.get("/stripe/config", (req, res): void => {
+  const publishableKey = getConfiguredPublishableKey();
+
+  if (!publishableKey) {
+    req.log.error("Stripe publishable key is missing or has an invalid format");
+    res.status(503).json({ error: "Payment service is not configured." });
+    return;
+  }
+
+  res.json({ publishableKey });
+});
 
 /**
  * POST /api/stripe/payment-intent

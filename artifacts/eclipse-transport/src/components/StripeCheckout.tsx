@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import {
   Elements,
   PaymentElement,
@@ -8,12 +8,7 @@ import {
 import { loadStripe } from "@stripe/stripe-js";
 import { Loader2, Lock, Shield } from "lucide-react";
 
-/* ─── Load Stripe outside of component to avoid recreation ─── */
-const publishableKey = (import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY ?? "").trim();
-const stripePromise =
-  publishableKey.startsWith("pk_test_") || publishableKey.startsWith("pk_live_")
-    ? loadStripe(publishableKey)
-    : null;
+const PUBLISHABLE_KEY_PATTERN = /^pk_(test|live)_[A-Za-z0-9]+$/;
 
 /* ─── Inner form (must be inside <Elements>) ─── */
 function CheckoutForm({
@@ -119,19 +114,28 @@ function CheckoutForm({
 /* ─── Outer wrapper — provides Elements context ─── */
 export function StripeCheckout({
   clientSecret,
+  publishableKey,
   amount,
   onSuccess,
   onError,
 }: {
   clientSecret: string;
+  publishableKey: string;
   amount: number;
   onSuccess: (paymentIntentId: string) => void;
   onError: (msg: string) => void;
 }) {
-  if (!publishableKey.startsWith("pk_")) {
+  const normalizedPublishableKey = publishableKey.trim();
+  const isValidPublishableKey = PUBLISHABLE_KEY_PATTERN.test(normalizedPublishableKey);
+  const stripePromise = useMemo(
+    () => (isValidPublishableKey ? loadStripe(normalizedPublishableKey) : null),
+    [isValidPublishableKey, normalizedPublishableKey],
+  );
+
+  if (!isValidPublishableKey) {
     return (
       <div role="alert" className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
-        Stripe is not configured correctly. Use a publishable key starting with pk_test_ or pk_live_.
+        Payment service is not configured correctly. Please try again later.
       </div>
     );
   }
