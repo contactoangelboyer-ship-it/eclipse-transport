@@ -18,7 +18,7 @@ function normalizeEnvValue(value: string | undefined): string {
     .replace(/^\uFEFF/, "")
     .trim()
     .replace(/^(['"])(.*)\1$/s, "$2")
-    .trim();
+    .replace(/\s+/g, "");
 }
 
 function getConfiguredStripeKey(): string | null {
