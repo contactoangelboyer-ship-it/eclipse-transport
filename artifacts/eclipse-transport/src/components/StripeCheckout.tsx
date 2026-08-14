@@ -10,7 +10,10 @@ import { Loader2, Lock, Shield } from "lucide-react";
 
 /* ─── Load Stripe outside of component to avoid recreation ─── */
 const publishableKey = (import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY ?? "").trim();
-    const stripePromise = publishableKey.startsWith("pk_") ? loadStripe(publishableKey) : null;
+const stripePromise =
+  publishableKey.startsWith("pk_test_") || publishableKey.startsWith("pk_live_")
+    ? loadStripe(publishableKey)
+    : null;
 
 /* ─── Inner form (must be inside <Elements>) ─── */
 function CheckoutForm({

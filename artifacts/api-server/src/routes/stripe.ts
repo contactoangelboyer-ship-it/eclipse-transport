@@ -4,12 +4,19 @@ import { calculateBookingPrice, type BookingPriceInput } from "@workspace/bookin
 
 const router: IRouter = Router();
 
+function getConfiguredStripeKey(): string | null {
+  const rawKey = process.env.STRIPE_SECRET_KEY;
+  if (!rawKey) return null;
+
+  // Vercel values are occasionally pasted with surrounding quotes or a
+  // trailing newline. Normalize those without ever logging the secret.
+  const key = rawKey.trim().replace(/^(['"])|(['"])$/g, "");
+  return key.startsWith("sk_test_") || key.startsWith("sk_live_") ? key : null;
+}
+
 function getStripeClient(): Stripe {
-  const key = process.env.STRIPE_SECRET_KEY?.trim();
-  if (!key) throw new Error("STRIPE_SECRET_KEY is not configured");
-  if (!key.startsWith("sk_")) {
-    throw new Error("STRIPE_SECRET_KEY must be a Stripe secret key (sk_test_... or sk_live_...).");
-  }
+  const key = getConfiguredStripeKey();
+  if (!key) throw new Error("Stripe server configuration is missing or invalid.");
   return new Stripe(key, { apiVersion: "2025-01-27.acacia" as any });
 }
 
@@ -49,8 +56,7 @@ router.post("/stripe/payment-intent", async (req, res): Promise<void> => {
       return;
     }
 
-    const stripeKey = process.env.STRIPE_SECRET_KEY?.trim();
-    if (!stripeKey || !stripeKey.startsWith("sk_")) {
+    if (!getConfiguredStripeKey()) {
       res.status(503).json({ error: "Stripe server configuration is missing or invalid. Please contact dispatch." });
       return;
     }
@@ -70,8 +76,17 @@ router.post("/stripe/payment-intent", async (req, res): Promise<void> => {
 
     res.json({ clientSecret: paymentIntent.client_secret, amount });
   } catch (err) {
-    const error = err as Error;
-    res.status(502).json({ error: error.message ?? "Failed to create payment intent" });
+    const error = err as Stripe.errors.StripeError;
+    req.log.error({ err: error }, "Stripe payment intent creation failed");
+
+    if (error?.type === "StripeAuthenticationError") {
+      res.status(503).json({
+        error: "Stripe server configuration is invalid. Please contact dispatch.",
+      });
+      return;
+    }
+
+    res.status(502).json({ error: "Unable to initialise payment. Please try again." });
   }
 });
 
