@@ -4,7 +4,9 @@ import { calculateBookingPrice, type BookingPriceInput } from "@workspace/bookin
 
 const router: IRouter = Router();
 
-const SECRET_KEY_PATTERN = /^(sk|rk)_(test|live)_[A-Za-z0-9]+$/;
+// Stripe can change the opaque portion of its key format. Validate only the
+// stable prefix and let Stripe itself validate the complete key.
+const SECRET_KEY_PATTERN = /^(sk|rk)_(test|live)_[^\s]+$/;
 const PUBLISHABLE_KEY_PATTERN = /^pk_(test|live)_[A-Za-z0-9]+$/;
 
 function normalizeEnvValue(value: string | undefined): string {
@@ -12,11 +14,21 @@ function normalizeEnvValue(value: string | undefined): string {
 
   // Vercel values are occasionally pasted with surrounding quotes or a
   // trailing newline. Normalize those without ever logging the secret.
-  return value.trim().replace(/^(['"])|(['"])$/g, "");
+  return value
+    .replace(/^\uFEFF/, "")
+    .trim()
+    .replace(/^(['"])(.*)\1$/s, "$2")
+    .trim();
 }
 
 function getConfiguredStripeKey(): string | null {
-  const key = normalizeEnvValue(process.env.STRIPE_SECRET_KEY);
+  // STRIPE_SECRET_KEY is the canonical name. The aliases keep existing
+  // Vercel projects working while they migrate from older configurations.
+  const key = normalizeEnvValue(
+    process.env.STRIPE_SECRET_KEY ??
+      process.env.STRIPE_SECRET ??
+      process.env.STRIPE_API_KEY,
+  );
   return SECRET_KEY_PATTERN.test(key) ? key : null;
 }
 
