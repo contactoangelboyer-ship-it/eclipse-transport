@@ -87,7 +87,7 @@ function CheckoutForm({
       <button
         type="submit"
         disabled={!stripe || loading}
-        className="w-full py-4 bg-[#1A1A1A] text-white font-bold text-sm tracking-widest uppercase rounded-2xl hover:bg-gray-800 transition-all disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-3 shadow-md hover:shadow-lg"
+        className="w-full py-4 bg-black text-white font-medium text-[15px] rounded-xl hover:bg-neutral-800 transition-all disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
       >
         {loading ? (
           <>
@@ -96,7 +96,7 @@ function CheckoutForm({
           </>
         ) : (
           <>
-            <Lock size={16} />
+            <Lock size={15} />
             Pay ${amount.toFixed(2)}
           </>
         )}
@@ -146,17 +146,29 @@ export function StripeCheckout({
       stripe={stripePromise}
       options={{
         clientSecret,
+        locale: "en",
         appearance: {
           theme: "stripe",
           variables: {
-            colorPrimary: "#1A1A1A",
+            colorPrimary: "#000000",
             colorBackground: "#ffffff",
-            colorText: "#1A1A1A",
+            colorText: "#000000",
             colorDanger: "#EF4444",
-            fontFamily: '"Plus Jakarta Sans", system-ui, sans-serif',
+            fontFamily: '"Inter", "Plus Jakarta Sans", system-ui, sans-serif',
             spacingUnit: "4px",
-            borderRadius: "12px",
+            borderRadius: "8px",
           },
+          rules: {
+            '.Input': {
+              border: '1px solid #E5E7EB',
+              boxShadow: 'none',
+              transition: 'border-color 0.2s ease',
+            },
+            '.Input:focus': {
+              border: '1px solid #000000',
+              boxShadow: 'none',
+            },
+          }
         },
       }}
     >

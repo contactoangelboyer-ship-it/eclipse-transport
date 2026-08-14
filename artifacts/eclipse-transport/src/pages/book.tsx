@@ -156,7 +156,7 @@ function StepBar({ current }: { current: number }) {
                   <div className="flex flex-col items-center py-3.5 gap-1">
                     <motion.div
                       animate={{
-                        backgroundColor: done || active ? "#1A1A1A" : "#F3F4F6",
+                        backgroundColor: done || active ? "black" : "#F3F4F6",
                         scale: active ? 1.1 : 1,
                       }}
                       transition={{ duration: 0.3 }}
@@ -166,7 +166,7 @@ function StepBar({ current }: { current: number }) {
                       {done ? <Check className="w-3.5 h-3.5" strokeWidth={3} /> : idx}
                     </motion.div>
                     <span className={`text-[9px] font-bold uppercase tracking-wider whitespace-nowrap hidden sm:block transition-colors
-                      ${active ? "text-[#1A1A1A]" : done ? "text-[#1A1A1A]/50" : "text-gray-300"}`}>
+                      ${active ? "text-[black]" : done ? "text-[black]/50" : "text-gray-300"}`}>
                       {label}
                     </span>
                   </div>
@@ -174,7 +174,7 @@ function StepBar({ current }: { current: number }) {
                     <div className="flex-1 mx-1.5">
                       <motion.div
                         className="h-[2px] rounded-full"
-                        animate={{ backgroundColor: done ? "#1A1A1A" : "#E5E7EB" }}
+                        animate={{ backgroundColor: done ? "black" : "#E5E7EB" }}
                         transition={{ duration: 0.4 }}
                       />
                     </div>
@@ -571,7 +571,7 @@ export default function Book() {
 
             <p className="text-center text-xs text-gray-400 mb-6">A confirmation will be sent to {values.passengerEmail}.</p>
 
-            <a href="/" className="block w-full h-13 flex items-center justify-center bg-[#1A1A1A] text-white rounded-2xl text-sm font-bold uppercase tracking-widest hover:bg-gray-800 transition-colors active:scale-95 py-4">
+            <a href="/" className="block w-full h-13 flex items-center justify-center bg-[black] text-white rounded-2xl text-sm font-bold uppercase tracking-widest hover:bg-gray-800 transition-colors active:scale-95 py-4">
               Back to Home
             </a>
           </motion.div>
@@ -612,7 +612,7 @@ export default function Book() {
                               onClick={() => setValue("tripType", t.id)}
                               className={`relative flex flex-col items-start gap-3 p-4 rounded-2xl border-2 text-left transition-all cursor-pointer touch-manipulation active:scale-[0.97]
                                 ${selected
-                                  ? "border-[#1A1A1A] bg-[#1A1A1A] shadow-lg"
+                                  ? "border-[black] bg-[black] shadow-lg"
                                   : "border-gray-100 bg-white hover:border-gray-300 hover:shadow-md"}`}
                             >
                               <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 transition-colors
@@ -820,14 +820,14 @@ export default function Book() {
                               type="button"
                               onClick={() => setValue("vehicleId", v.id)}
                               className={`w-full text-left rounded-2xl border-2 bg-white overflow-hidden transition-all touch-manipulation active:scale-[0.99]
-                                ${selected ? "border-[#1A1A1A] shadow-lg" : "border-gray-100 hover:border-gray-300 hover:shadow-md"}`}
+                                ${selected ? "border-[black] shadow-lg" : "border-gray-100 hover:border-gray-300 hover:shadow-md"}`}
                             >
                               <div className="flex flex-col sm:flex-row">
                                 <div className="sm:w-40 h-36 sm:h-auto shrink-0 overflow-hidden bg-gray-50 relative">
                                   <img src={v.image} alt={v.name} className="w-full h-full object-cover" />
                                   {selected && (
-                                    <div className="absolute inset-0 bg-[#1A1A1A]/10 flex items-center justify-center">
-                                      <div className="w-9 h-9 bg-[#1A1A1A] rounded-full flex items-center justify-center shadow-lg">
+                                    <div className="absolute inset-0 bg-[black]/10 flex items-center justify-center">
+                                      <div className="w-9 h-9 bg-[black] rounded-full flex items-center justify-center shadow-lg">
                                         <Check className="w-5 h-5 text-white" strokeWidth={2.5} />
                                       </div>
                                     </div>
@@ -837,17 +837,11 @@ export default function Book() {
                                   <div className="flex items-start justify-between gap-3">
                                     <div>
                                       <span className={`inline-block text-[10px] font-bold uppercase tracking-widest px-2.5 py-0.5 rounded-full mb-2
-                                        ${selected ? "bg-[#1A1A1A] text-white" : "bg-gray-100 text-gray-500"}`}>
+                                        ${selected ? "bg-black text-white" : "bg-gray-100 text-gray-500"}`}>
                                         {v.category}
                                       </span>
                                       <h3 className="font-bold text-gray-900 text-base leading-tight">{v.name}</h3>
                                       <p className="text-xs text-gray-400 mt-0.5">{v.model}</p>
-                                    </div>
-                                    <div className="text-right shrink-0">
-                                      <p className={`text-xl font-bold ${selected ? "text-[#1A1A1A]" : "text-gray-800"}`}>
-                                        ${isHourly ? v.hourlyRate : v.ratePerMile.toFixed(2)}
-                                      </p>
-                                      <p className="text-xs text-gray-400">{isHourly ? "per hour" : "per mile"}</p>
                                     </div>
                                   </div>
                                   <div className="flex items-center gap-4 mt-3 text-xs text-gray-500">
@@ -860,12 +854,13 @@ export default function Book() {
                                       <span key={a} className="text-[10px] bg-gray-50 border border-gray-100 rounded-full px-2.5 py-0.5 text-gray-600">{a}</span>
                                     ))}
                                   </div>
-                                  <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-50">
-                                    <span className="text-sm font-semibold text-gray-700">{price}</span>
-                                    {selected && (
-                                      <span className="flex items-center gap-1.5 text-xs font-bold text-[#1A1A1A]">
+                                  <div className="flex justify-end mt-3 pt-3 border-t border-gray-50">
+                                    {selected ? (
+                                      <span className="flex items-center gap-1.5 text-xs font-bold text-black">
                                         <Check className="w-3.5 h-3.5" /> Selected
                                       </span>
+                                    ) : (
+                                      <span className="text-xs font-semibold text-gray-400">Select Vehicle</span>
                                     )}
                                   </div>
                                 </div>
@@ -894,7 +889,7 @@ export default function Book() {
                               >
                                 <div className="flex items-center gap-3">
                                   <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all shrink-0
-                                    ${checked ? "bg-[#1A1A1A] border-[#1A1A1A]" : "border-gray-200 group-hover:border-gray-400"}`}>
+                                    ${checked ? "bg-[black] border-[black]" : "border-gray-200 group-hover:border-gray-400"}`}>
                                     {checked && <Check className="w-3 h-3 text-white" strokeWidth={3} />}
                                   </div>
                                   <div>
@@ -994,21 +989,7 @@ export default function Book() {
                             <div className="flex justify-between"><span className="text-gray-500">Vehicle</span><span className="font-semibold">{vehicle?.name || "—"}</span></div>
                             <div className="flex justify-between"><span className="text-gray-500">Passengers</span><span className="font-semibold">{values.passengers}</span></div>
                           </div>
-                          {totalEstimate > 0 && (
-                            <div className="mt-4 pt-4 border-t border-gray-100 space-y-2 text-sm">
-                              {baseRate > 0 && (
-                <div className="flex justify-between text-gray-500">
-                  <span>{minimumApplied ? "Minimum fare" : routeMiles !== null ? `Rate (${routeMiles.toFixed(1)} miles)` : "Rate"}</span>
-                   <span>{formatUsd(baseRate)}{minimumApplied && <span className="ml-1 text-[10px] font-bold text-amber-600 uppercase tracking-wide"> MIN</span>}</span>
-                </div>
-              )}
-                              {addonsTotal > 0 && <div className="flex justify-between text-gray-500"><span>Add-ons</span><span>+{formatUsd(addonsTotal)}</span></div>}
-                              {gratuity > 0 && <div className="flex justify-between text-gray-500"><span>Gratuity (20%)</span><span>+{formatUsd(gratuity)}</span></div>}
-                              <div className="flex justify-between font-bold text-base pt-2 border-t border-gray-100">
-                                <span>Total Estimate</span><span>{formatUsd(totalEstimate)}</span>
-                              </div>
-                            </div>
-                          )}
+                          {/* Se ocultaron los precios por requerimiento (Price Estimate at step 5 only) */}
                           <div className="mt-4 flex items-start gap-2.5 text-xs text-gray-400 bg-gray-50 rounded-xl p-3">
                             <Shield className="w-3.5 h-3.5 mt-0.5 shrink-0" />
                             <span>No charge until your ride is confirmed. Final price agreed before billing.</span>
@@ -1131,7 +1112,7 @@ export default function Book() {
                     <button
                       type="button"
                       onClick={handleNext}
-                      className="flex items-center gap-2 h-12 bg-[#1A1A1A] text-white px-8 rounded-xl text-sm font-bold hover:bg-gray-800 active:scale-95 transition-all shadow-sm"
+                      className="flex items-center gap-2 h-12 bg-[black] text-white px-8 rounded-xl text-sm font-bold hover:bg-gray-800 active:scale-95 transition-all shadow-sm"
                     >
                       Continue <ChevronRight className="w-4 h-4" />
                     </button>
@@ -1148,7 +1129,7 @@ export default function Book() {
               <div className="sticky top-24 space-y-4">
                 {/* Trip card */}
                 <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-                  <div className="bg-[#1A1A1A] text-white p-4">
+                  <div className="bg-[black] text-white p-4">
                     <p className="text-[10px] font-bold uppercase tracking-widest text-white/50 mb-1">Your Trip</p>
                     <p className="font-bold">{tripType}</p>
                   </div>
@@ -1201,7 +1182,7 @@ export default function Book() {
                 )}
 
                 {/* Price breakdown */}
-                {totalEstimate > 0 && (
+                {step === 5 && totalEstimate > 0 && (
                   <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
                     <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-3">Price Estimate</p>
                     <div className="space-y-2 text-sm">
@@ -1219,7 +1200,7 @@ export default function Book() {
                 )}
 
                 {/* Stripe payment badge */}
-                {step >= 2 && totalEstimate > 0 && (
+                {step === 5 && totalEstimate > 0 && (
                   <div className="bg-gray-50 border border-gray-100 rounded-2xl p-4">
                     <div className="flex items-center gap-2.5 mb-1.5">
                       <Lock className="w-3.5 h-3.5 text-gray-400" />
@@ -1265,10 +1246,10 @@ export default function Book() {
             )}
             <div>
               <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400">
-                {totalEstimate > 0 ? "Estimate" : STEPS[step - 1]}
+                {step === 5 && totalEstimate > 0 ? "Total Due" : STEPS[step - 1]}
               </p>
               <p className="text-lg font-bold text-gray-900">
-                {totalEstimate > 0 ? formatUsd(displayTotal) : `Step ${step} of ${STEPS.length}`}
+                {step === 5 && totalEstimate > 0 ? formatUsd(displayTotal) : `Step ${step} of ${STEPS.length}`}
               </p>
             </div>
           </div>
@@ -1277,7 +1258,7 @@ export default function Book() {
             <button
               type="button"
               onClick={handleNext}
-              className="flex items-center gap-1.5 h-12 bg-[#1A1A1A] text-white px-7 rounded-xl text-sm font-bold shrink-0 active:scale-95 touch-manipulation"
+              className="flex items-center gap-1.5 h-12 bg-[black] text-white px-7 rounded-xl text-sm font-bold shrink-0 active:scale-95 touch-manipulation"
             >
               Continue <ChevronRight className="w-4 h-4" />
             </button>
