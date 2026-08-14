@@ -81,6 +81,14 @@ const addons = [
 const formatUsd = (amount: number) =>
   amount.toLocaleString("en-US", { style: "currency", currency: "USD" });
 
+const createPaymentIdempotencyKey = () => {
+  const randomPart =
+    typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
+      ? crypto.randomUUID()
+      : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  return `eclipse-booking-${randomPart}`;
+};
+
 /* ─────────────────────────── schema ─────────────────────────── */
 
 const bookingSchema = z.object({
@@ -238,7 +246,8 @@ export default function Book() {
   const [step, setStep]             = useState(1);
   const [isSuccess, setIsSuccess]   = useState(false);
   const [clientSecret, setClientSecret]   = useState<string | null>(null);
-  const [stripePublishableKey, setStripePublishableKey] = useState<string | null>(null);
+  const stripePublishableKey =
+    (import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY as string | undefined)?.trim() || null;
   const [paymentAmount, setPaymentAmount] = useState<number | null>(null);
   const [paymentIntentId, setPaymentIntentId] = useState<string | null>(null);
   const [piLoading, setPiLoading]   = useState(false);
@@ -251,6 +260,7 @@ export default function Book() {
   const [bookingError, setBookingError] = useState<string | null>(null);
   const [pendingBooking, setPendingBooking] = useState<BookingInput | null>(null);
   const paymentSignatureRef        = useRef<string | null>(null);
+  const paymentIdempotencyKeyRef   = useRef<{ signature: string; key: string } | null>(null);
   const queryClient   = useQueryClient();
   const createBooking = useCreateBooking();
 
@@ -375,61 +385,77 @@ export default function Book() {
     if (step !== 5 || totalEstimate <= 0) return;
     if (paymentSignatureRef.current === paymentSignature) return;
     paymentSignatureRef.current = paymentSignature;
+    if (paymentIdempotencyKeyRef.current?.signature !== paymentSignature) {
+      paymentIdempotencyKeyRef.current = {
+        signature: paymentSignature,
+        key: createPaymentIdempotencyKey(),
+      };
+    }
+    const idempotencyKey = paymentIdempotencyKeyRef.current.key;
+    const controller = new AbortController();
     setClientSecret(null);
     setPaymentIntentId(null);
+    setPaymentAmount(null);
     setPiLoading(true);
     setPiError(null);
 
-    const apiBase = (import.meta.env.BASE_URL ?? "/").replace(/\/$/, "");
+    if (!stripePublishableKey) {
+      setPiError("Stripe is not configured for this web deployment. Please contact dispatch.");
+      setPiLoading(false);
+      return;
+    }
+
+    const apiBase = (import.meta.env.VITE_API_BASE_URL ?? "").replace(/\/$/, "");
     const readJson = async <T,>(response: Response): Promise<T> => {
-      const data = (await response.json()) as T & { error?: string };
+      const data = (await response.json().catch(() => ({}))) as T & { error?: string };
       if (!response.ok) {
         throw new Error(data.error ?? `Payment setup failed (${response.status}).`);
       }
       return data;
     };
 
-    fetch(`${apiBase}/api/stripe/config`)
-      .then(response => readJson<{ publishableKey: string }>(response))
-      .then(config =>
-        fetch(`${apiBase}/api/stripe/payment-intent`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            amount: totalEstimate,
-            quote: {
-              vehicleId: values.vehicleId || "",
-              tripType: values.tripType,
-              duration: values.duration,
-              routeMiles,
-              addonMeetGreet: values.addonMeetGreet,
-              addonChildSeat: values.addonChildSeat,
-              addonFlowers: values.addonFlowers,
-              extraStops: values.extraStops,
-            },
-            customerEmail: values.passengerEmail,
-            metadata: {
-              passengerName: values.passengerName || "Guest",
-              serviceType:   values.tripType || "",
-              pickupDate:    values.pickupDate || "",
-              routeMiles:    routeMiles?.toFixed(2) || "",
-            },
-          }),
-        })
-          .then(response => readJson<{ clientSecret: string; amount?: number }>(response))
-          .then(data => ({ config, data })),
-      )
-      .then(({ config, data }) => {
-        setStripePublishableKey(config.publishableKey);
+    fetch(`${apiBase}/api/stripe/payment-intent`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        amountCents: Math.round(totalEstimate * 100),
+        idempotencyKey,
+        quote: {
+          vehicleId: values.vehicleId || "",
+          tripType: values.tripType,
+          duration: values.duration,
+          routeMiles,
+          addonMeetGreet: values.addonMeetGreet,
+          addonChildSeat: values.addonChildSeat,
+          addonFlowers: values.addonFlowers,
+          extraStops: values.extraStops,
+        },
+        customerEmail: values.passengerEmail,
+        metadata: {
+          passengerName: values.passengerName || "Guest",
+          serviceType:   values.tripType || "",
+          pickupDate:    values.pickupDate || "",
+          routeMiles:    routeMiles?.toFixed(2) || "",
+        },
+      }),
+      signal: controller.signal,
+    })
+      .then(response => readJson<{ clientSecret: string; amount?: number }>(response))
+      .then(data => {
         setClientSecret(data.clientSecret);
         setPaymentAmount(typeof data.amount === "number" ? data.amount : totalEstimate);
       })
       .catch((error: unknown) => {
+        if (error instanceof DOMException && error.name === "AbortError") return;
         paymentSignatureRef.current = null;
-        setPiError(error instanceof Error ? error.message : "Network error. Please check your connection.");
+        setPiError(error instanceof Error ? error.message : "Unable to initialise payment. Please try again.");
       })
-      .finally(() => setPiLoading(false));
-  }, [paymentSignature, step, totalEstimate]); // eslint-disable-line react-hooks/exhaustive-deps
+      .finally(() => {
+        if (!controller.signal.aborted) setPiLoading(false);
+      });
+
+    return () => controller.abort();
+  }, [paymentSignature, step, stripePublishableKey, totalEstimate]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const saveBooking = (bookingData: BookingInput) => {
     setBookingError(null);

@@ -57,16 +57,31 @@ router.get("/stripe/config", (req, res): void => {
 /**
  * POST /api/stripe/payment-intent
  * Creates a Stripe PaymentIntent for the given booking amount.
- * Body: { quote: BookingPriceInput, customerEmail?: string, metadata?: object }
+ * Body: {
+ *   quote: BookingPriceInput,
+ *   amountCents?: integer,
+ *   customerEmail?: string,
+ *   metadata?: object,
+ *   idempotencyKey?: string
+ * }
  * Response: { clientSecret: string, amount: number }
  */
 router.post("/stripe/payment-intent", async (req, res): Promise<void> => {
   try {
-    const { quote, amount: clientAmount, customerEmail, metadata = {} } = req.body as {
+    const {
+      quote,
+      amount: clientAmount,
+      amountCents: clientAmountCents,
+      customerEmail,
+      metadata = {},
+      idempotencyKey,
+    } = req.body as {
       quote?: BookingPriceInput;
       amount?: number;
+      amountCents?: number;
       customerEmail?: string;
       metadata?: Record<string, string>;
+      idempotencyKey?: string;
     };
 
     if (!quote) {
@@ -81,12 +96,31 @@ router.post("/stripe/payment-intent", async (req, res): Promise<void> => {
       return;
     }
 
+    const amountCents = Math.round(amount * 100);
     if (
       clientAmount !== undefined &&
       (typeof clientAmount !== "number" || !Number.isFinite(clientAmount) ||
         Math.abs(clientAmount - amount) > 0.01)
     ) {
       res.status(409).json({ error: "The displayed price is out of date. Please review your trip and try again." });
+      return;
+    }
+
+    if (
+      clientAmountCents !== undefined &&
+      (!Number.isSafeInteger(clientAmountCents) || clientAmountCents !== amountCents)
+    ) {
+      res.status(409).json({ error: "The displayed price is out of date. Please review your trip and try again." });
+      return;
+    }
+
+    if (
+      idempotencyKey !== undefined &&
+      (typeof idempotencyKey !== "string" ||
+        idempotencyKey.length < 8 ||
+        idempotencyKey.length > 255)
+    ) {
+      res.status(400).json({ error: "Invalid payment request. Please try again." });
       return;
     }
 
@@ -98,15 +132,23 @@ router.post("/stripe/payment-intent", async (req, res): Promise<void> => {
     const stripe = getStripeClient();
 
     const paymentIntent = await stripe.paymentIntents.create({
-      amount: Math.round(amount * 100),
+      amount: amountCents,
       currency: "usd",
-      receipt_email: customerEmail,
+      receipt_email:
+        typeof customerEmail === "string" && customerEmail.trim()
+          ? customerEmail.trim()
+          : undefined,
       metadata: {
         ...metadata,
         source: "eclipse-transport-booking",
       },
       automatic_payment_methods: { enabled: true },
-    });
+    }, idempotencyKey ? { idempotencyKey } : undefined);
+
+    if (!paymentIntent.client_secret) {
+      res.status(502).json({ error: "Payment service did not return a secure payment session." });
+      return;
+    }
 
     res.json({ clientSecret: paymentIntent.client_secret, amount });
   } catch (err) {

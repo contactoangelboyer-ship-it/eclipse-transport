@@ -53,6 +53,7 @@ function CheckoutForm({
     }
 
     if (paymentIntent?.status === "succeeded" || paymentIntent?.status === "processing") {
+      setLoading(false);
       onSuccess(paymentIntent.id);
     } else {
       setError("Unexpected payment status. Please try again.");
