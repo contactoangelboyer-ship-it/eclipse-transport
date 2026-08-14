@@ -1,0 +1,1 @@
+- [Vercel API deployment](vercel-api-deployment.md) — keep the API's serverless entry and Vercel config separate from the web artifact.
