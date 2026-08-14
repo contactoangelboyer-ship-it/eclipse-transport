@@ -222,6 +222,7 @@ export default function Book() {
   const [step, setStep]             = useState(1);
   const [isSuccess, setIsSuccess]   = useState(false);
   const [clientSecret, setClientSecret]   = useState<string | null>(null);
+  const [stripePublishableKey, setStripePublishableKey] = useState<string | null>(null);
   const [paymentIntentId, setPaymentIntentId] = useState<string | null>(null);
   const [piLoading, setPiLoading]   = useState(false);
   const [piError, setPiError]       = useState<string | null>(null);
@@ -291,28 +292,44 @@ export default function Book() {
     setPiError(null);
 
     const apiBase = (import.meta.env.BASE_URL ?? "/").replace(/\/$/, "");
-    fetch(`${apiBase}/api/stripe/payment-intent`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        amount: totalEstimate,
-        customerEmail: values.passengerEmail,
-        metadata: {
-          passengerName: values.passengerName || "Guest",
-          serviceType:   values.tripType || "",
-          pickupDate:    values.pickupDate || "",
-        },
-      }),
-    })
-      .then(r => r.json())
-      .then((data: { clientSecret?: string; error?: string }) => {
-        if (data.clientSecret) {
-          setClientSecret(data.clientSecret);
-        } else {
-          setPiError(data.error ?? "Could not initialise payment.");
-        }
+    const readJson = async <T,>(response: Response): Promise<T> => {
+      const data = (await response.json()) as T & { error?: string };
+      if (!response.ok) {
+        throw new Error(data.error ?? "Could not initialise payment.");
+      }
+      return data;
+    };
+
+    fetch(`${apiBase}/api/stripe/config`)
+      .then(response => readJson<{ publishableKey: string }>(response))
+      .then(config =>
+        fetch(`${apiBase}/api/stripe/payment-intent`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            amount: totalEstimate,
+            customerEmail: values.passengerEmail,
+            metadata: {
+              passengerName: values.passengerName || "Guest",
+              serviceType:   values.tripType || "",
+              pickupDate:    values.pickupDate || "",
+            },
+          }),
+        })
+          .then(response => readJson<{ clientSecret: string }>(response))
+          .then(data => ({ config, data })),
+      )
+      .then(({ config, data }) => {
+        setStripePublishableKey(config.publishableKey);
+        setClientSecret(data.clientSecret);
       })
-      .catch(() => setPiError("Network error. Please check your connection."))
+      .catch((error: unknown) => {
+        setPiError(
+          error instanceof Error
+            ? error.message
+            : "Could not initialise payment.",
+        );
+      })
       .finally(() => setPiLoading(false));
   }, [step, totalEstimate]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -885,6 +902,7 @@ export default function Book() {
                         {clientSecret && !piLoading && (
                           <StripeCheckout
                             clientSecret={clientSecret}
+                            publishableKey={stripePublishableKey ?? ""}
                             amount={totalEstimate}
                             onSuccess={(piId) => handlePaymentSuccess(piId, values as BookingFormValues)}
                             onError={(msg) => setPiError(msg)}

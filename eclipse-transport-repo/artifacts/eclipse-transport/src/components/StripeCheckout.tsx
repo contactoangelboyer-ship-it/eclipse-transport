@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import {
   Elements,
   PaymentElement,
@@ -8,8 +8,7 @@ import {
 import { loadStripe } from "@stripe/stripe-js";
 import { Loader2, Lock, Shield } from "lucide-react";
 
-/* ─── Load Stripe outside of component to avoid recreation ─── */
-const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY ?? "");
+const PUBLISHABLE_KEY_PATTERN = /^pk_(test|live)_[A-Za-z0-9]+$/;
 
 /* ─── Inner form (must be inside <Elements>) ─── */
 function CheckoutForm({
@@ -115,15 +114,33 @@ function CheckoutForm({
 /* ─── Outer wrapper — provides Elements context ─── */
 export function StripeCheckout({
   clientSecret,
+  publishableKey,
   amount,
   onSuccess,
   onError,
 }: {
   clientSecret: string;
+  publishableKey: string;
   amount: number;
   onSuccess: (paymentIntentId: string) => void;
   onError: (msg: string) => void;
 }) {
+  const isValidPublishableKey = PUBLISHABLE_KEY_PATTERN.test(publishableKey);
+  const stripePromise = useMemo(
+    () => (isValidPublishableKey ? loadStripe(publishableKey) : null),
+    [isValidPublishableKey, publishableKey],
+  );
+
+  if (!isValidPublishableKey) {
+    return (
+      <div className="bg-red-50 border border-red-100 rounded-2xl p-4">
+        <p className="text-red-600 text-sm font-medium">
+          Payment service is not configured correctly. Please try again later.
+        </p>
+      </div>
+    );
+  }
+
   return (
     <Elements
       stripe={stripePromise}
