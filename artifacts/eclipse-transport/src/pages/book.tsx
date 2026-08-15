@@ -268,7 +268,6 @@ export default function Book() {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        amountCents: Math.round(totalEstimate * 100),
         idempotencyKey,
         quote: {
           vehicleId:      values.vehicleId || "",
