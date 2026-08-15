@@ -62,7 +62,7 @@ function CheckoutForm({
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-5">
+    <div className="space-y-5">
       <div className="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm">
         <div className="flex items-center gap-2 mb-5">
           <Lock size={14} className="text-gray-400" />
@@ -85,7 +85,8 @@ function CheckoutForm({
       )}
 
       <button
-        type="submit"
+        type="button"
+        onClick={handleSubmit}
         disabled={!stripe || loading}
         className="w-full py-4 bg-black text-white font-medium text-[15px] rounded-xl hover:bg-neutral-800 transition-all disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
       >
@@ -108,7 +109,7 @@ function CheckoutForm({
           Secured by Stripe · 256-bit SSL encryption
         </p>
       </div>
-    </form>
+    </div>
   );
 }
 
