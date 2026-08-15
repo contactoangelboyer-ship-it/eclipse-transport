@@ -59,3 +59,5 @@ ensurePricingTable().then(() => {
     logger.info({ port }, "Server listening");
   });
 });
+
+// Trigger deploy
