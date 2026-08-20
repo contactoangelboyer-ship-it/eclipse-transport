@@ -282,9 +282,9 @@ function VehicleCard({ vehicle, index }: { vehicle: any, index: number }) {
           <div className="flex items-center gap-4">
             <Wifi className="w-5 h-5 text-[#1A1A1A]/30" strokeWidth={1.5} />
             <div>
-              <p className="font-bold text-[#1A1A1A] text-[10px] uppercase tracking-[0.15em]">Rate Per Mile</p>
-              <p className="text-sm text-[#1A1A1A]/60 mt-1">{vehicle.ratePerMile}/mile</p>
-              <p className="text-[10px] text-[#1A1A1A]/40 mt-0.5">Min. {vehicle.minimumFare}</p>
+              <p className="font-bold text-[#1A1A1A] text-[10px] uppercase tracking-[0.15em]">Starting Fare</p>
+              <p className="text-sm font-semibold text-[#1A1A1A]/80 mt-1">{vehicle.minimumFare}</p>
+              <p className="text-[10px] text-[#1A1A1A]/40 mt-0.5">{vehicle.ratePerMile}/mile · one way</p>
             </div>
           </div>
         </div>
