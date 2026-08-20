@@ -512,6 +512,19 @@ export default function Book() {
                 <div className="px-5 space-y-3">
                   {vehicles.map(v => {
                     const selected = values.vehicleId === v.id;
+                    const cardPrice = calculateBookingPrice({
+                      vehicleId: v.id,
+                      tripType: values.serviceType,
+                      duration: values.duration,
+                      routeMiles: isHourly ? null : (routeMiles ?? 0),
+                      addonMeetGreet: values.addonMeetGreet,
+                      addonChildSeat: values.addonChildSeat,
+                      addonFlowers: values.addonFlowers,
+                      extraStops: values.extraStops,
+                    });
+                    const cardMinimum = BOOKING_VEHICLES[v.id as keyof typeof BOOKING_VEHICLES]?.minimumFare ?? 0;
+                    const cardTotal = cardPrice.total > 0 ? cardPrice.total : cardMinimum;
+                    const hasConfirmedRoute = isHourly || routeMiles !== null;
                     return (
                       <button key={v.id} type="button" onClick={() => setValue("vehicleId", v.id)}
                         className={`w-full text-left rounded-3xl overflow-hidden transition-all duration-150 touch-manipulation
@@ -528,7 +541,11 @@ export default function Book() {
                             )}
                             <p className="font-bold text-gray-900 text-sm pr-8">{v.name}</p>
                             <p className="text-[11px] text-gray-400 mt-0.5">{v.category} · {v.model}</p>
-                            <div className="flex gap-2 mt-2.5">
+                            <div className="mt-2 flex items-baseline gap-1.5">
+                              <span className="text-base font-black text-gray-900">{formatUsd(cardTotal)}</span>
+                              <span className="text-[10px] text-gray-400">{hasConfirmedRoute ? "estimated total" : "starting fare"}</span>
+                            </div>
+                            <div className="flex gap-2 mt-2">
                               <span className="flex items-center gap-1 text-[11px] font-medium text-gray-600 bg-gray-100 px-2 py-0.5 rounded-md">
                                 <Users className="w-3 h-3" /> {v.pax}
                               </span>
