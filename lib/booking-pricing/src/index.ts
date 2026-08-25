@@ -26,9 +26,29 @@ export const FLEET_RATES = {
     hourlyRate: 75,
     minimumFare: 100,
   },
+  lincoln: {
+    id: "lincoln",
+    label: "Lincoln Continental",
+    baseFare: 100.00,
+    baseMilesLimit: 15,
+    ratePerExtraMile: 2.40,
+    hourlyRate: 75,
+    minimumFare: 100,
+  },
+  mercedes: {
+    id: "mercedes",
+    label: "Mercedes S-Class",
+    baseFare: 100.00,
+    baseMilesLimit: 15,
+    ratePerExtraMile: 2.40,
+    hourlyRate: 75,
+    minimumFare: 100,
+  },
 } as const;
 
 export type FleetVehicleId = keyof typeof FLEET_RATES;
+
+export const BOOKING_VEHICLES = FLEET_RATES;
 
 export const BOOKING_ADDON_PRICES = {
   meetGreet: 25,
