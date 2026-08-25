@@ -1,29 +1,34 @@
-export const BOOKING_VEHICLES = {
-  suburban: {
-    name: "Chevrolet Suburban",
-    ratePerMile: 6.2,
-    hourlyRate: 80,
-    minimumFare: 90,
-  },
+export const FLEET_RATES = {
   escalade: {
-    name: "Cadillac Escalade ESV",
-    ratePerMile: 7.15,
+    id: "escalade",
+    label: "Cadillac Escalade",
+    baseFare: 140.00,
+    baseMilesLimit: 15,
+    ratePerExtraMile: 3.40,
     hourlyRate: 95,
+    minimumFare: 140,
+  },
+  suburban: {
+    id: "suburban",
+    label: "Suburban",
+    baseFare: 120.00,
+    baseMilesLimit: 15,
+    ratePerExtraMile: 2.95,
+    hourlyRate: 80,
+    minimumFare: 120,
+  },
+  sedan: {
+    id: "sedan",
+    label: "Sedan",
+    baseFare: 100.00,
+    baseMilesLimit: 15,
+    ratePerExtraMile: 2.40,
+    hourlyRate: 75,
     minimumFare: 100,
   },
-  lincoln: {
-    name: "Lincoln Continental",
-    ratePerMile: 5.6,
-    hourlyRate: 65,
-    minimumFare: 80,
-  },
-  mercedes: {
-    name: "Mercedes-Benz S-Class",
-    ratePerMile: 5.6,
-    hourlyRate: 75,
-    minimumFare: 80,
-  },
 } as const;
+
+export type FleetVehicleId = keyof typeof FLEET_RATES;
 
 export const BOOKING_ADDON_PRICES = {
   meetGreet: 25,
@@ -54,7 +59,7 @@ export type BookingPriceBreakdown = {
 const roundMoney = (value: number) => Math.round((value + Number.EPSILON) * 100) / 100;
 
 export function calculateBookingPrice(input: BookingPriceInput): BookingPriceBreakdown {
-  const vehicle = BOOKING_VEHICLES[input.vehicleId as keyof typeof BOOKING_VEHICLES];
+  const vehicle = FLEET_RATES[input.vehicleId as FleetVehicleId];
   if (!vehicle) {
     return { baseRate: 0, addonsTotal: 0, gratuity: 0, total: 0, minimumApplied: false };
   }
@@ -68,9 +73,15 @@ export function calculateBookingPrice(input: BookingPriceInput): BookingPriceBre
   if (isHourly) {
     baseRate = vehicle.hourlyRate * duration;
   } else if (miles != null && Number.isFinite(miles) && miles >= 0) {
-    const distanceFare = vehicle.ratePerMile * miles;
-    minimumApplied = distanceFare < vehicle.minimumFare;
-    baseRate = minimumApplied ? vehicle.minimumFare : distanceFare;
+    if (miles <= vehicle.baseMilesLimit) {
+      baseRate = vehicle.baseFare;
+    } else {
+      baseRate = vehicle.baseFare + (miles - vehicle.baseMilesLimit) * vehicle.ratePerExtraMile;
+    }
+    minimumApplied = baseRate <= vehicle.minimumFare;
+    if (minimumApplied) {
+      baseRate = vehicle.minimumFare;
+    }
   }
 
   const extraStops = Math.max(0, Math.floor(Number(input.extraStops) || 0));
