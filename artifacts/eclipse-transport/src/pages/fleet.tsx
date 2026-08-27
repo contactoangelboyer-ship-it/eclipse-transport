@@ -5,7 +5,8 @@ import { motion } from "framer-motion";
 
 import suburbanImg from "@assets/generated_images/fleet-suburban.jpg";
 import escaladeImg from "@assets/generated_images/fleet-escalade.jpg";
-
+import lincolnImg from "@assets/generated_images/fleet-lincoln.jpg";
+import mercedesImg from "@assets/generated_images/fleet-mercedes.jpg";
 
 const vehicles = [
   {
@@ -17,8 +18,8 @@ const vehicles = [
     description: "The pinnacle of understated luxury. Exceptionally spacious, impeccably maintained, and equipped for the most demanding clientele.",
     capacity: 7,
     luggage: "6 bags",
-    minimumFare: " base",
-    extraMileRate: ".95 beyond 15 miles",
+    minimumFare: "$120 base",
+    extraMileRate: "$2.95 per mile beyond 15 miles",
     hasWifi: true,
     hasPrivacy: true,
     hasChildSeat: true,
@@ -35,8 +36,8 @@ const vehicles = [
     description: "Commanding presence with refined interiors. Offers an unparalleled ride experience with cutting-edge technology and premium leather seating.",
     capacity: 7,
     luggage: "6 bags",
-    minimumFare: " base",
-    extraMileRate: ".40 beyond 15 miles",
+    minimumFare: "$140 base",
+    extraMileRate: "$3.40 per mile beyond 15 miles",
     hasWifi: true,
     hasPrivacy: true,
     hasChildSeat: true,
@@ -53,8 +54,8 @@ const vehicles = [
     description: "Classic executive elegance. A quiet, smooth journey perfect for airport transfers and corporate travel with ample legroom.",
     capacity: 3,
     luggage: "3 bags",
-    minimumFare: " base",
-    extraMileRate: ".40 beyond 15 miles",
+    minimumFare: "$80 base",
+    extraMileRate: "$2.40 per mile beyond 15 miles",
     hasWifi: true,
     hasPrivacy: true,
     hasChildSeat: false,
@@ -71,8 +72,8 @@ const vehicles = [
     description: "The ultimate standard in luxury sedans. State-of-the-art safety, exquisite craftsmanship, and an extraordinarily smooth ride.",
     capacity: 3,
     luggage: "3 bags",
-    minimumFare: " base",
-    extraMileRate: ".40 beyond 15 miles",
+    minimumFare: "$80 base",
+    extraMileRate: "$2.40 per mile beyond 15 miles",
     hasWifi: true,
     hasPrivacy: true,
     hasChildSeat: false,
@@ -109,7 +110,6 @@ export default function Fleet() {
         </div>
       </div>
 
-      {/* Fleet Standards Banner */}
       <div className="bg-[#1A1A1A] text-white py-16" data-testid="banner-fleet-standards">
         <div className="container mx-auto px-6 max-w-7xl">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8 md:gap-4 divide-x-0 md:divide-x divide-white/10 text-center">
@@ -135,8 +135,6 @@ export default function Fleet() {
 
       <div className="bg-white pb-32">
         <div className="container mx-auto px-6 max-w-7xl">
-          
-          {/* SUVs Section */}
           <div className="mb-32 mt-24">
             <h2 className="text-[11px] font-bold uppercase tracking-[0.25em] text-[#1A1A1A]/40 mb-16 border-b border-black/5 pb-4">SUV Class</h2>
             <div className="flex flex-col gap-24">
@@ -146,7 +144,6 @@ export default function Fleet() {
             </div>
           </div>
 
-          {/* Sedans Section */}
           <div className="mb-32">
             <h2 className="text-[11px] font-bold uppercase tracking-[0.25em] text-[#1A1A1A]/40 mb-16 border-b border-black/5 pb-4">Sedan Class</h2>
             <div className="flex flex-col gap-24">
@@ -156,7 +153,6 @@ export default function Fleet() {
             </div>
           </div>
 
-          {/* Comparison Table */}
           <div className="mt-32" data-testid="section-comparison">
             <div className="text-center mb-16">
               <h2 className="text-[11px] font-bold uppercase tracking-[0.25em] text-[#1A1A1A]/40 mb-4">Fleet Specifications</h2>
@@ -170,8 +166,8 @@ export default function Fleet() {
                     <th className="p-6 font-bold text-[10px] uppercase tracking-[0.2em] text-[#1A1A1A]/40">Specification</th>
                     <th className="p-6 font-bold text-[11px] uppercase tracking-[0.1em] text-[#1A1A1A]">Suburban</th>
                     <th className="p-6 font-bold text-[11px] uppercase tracking-[0.1em] text-[#1A1A1A]">Escalade</th>
-                    <th className="p-6 font-bold text-[11px] uppercase tracking-[0.1em] text-[#1A1A1A]">Continental</th>
-                    <th className="p-6 font-bold text-[11px] uppercase tracking-[0.1em] text-[#1A1A1A]">S-Class</th>
+                    <th className="p-6 font-bold text-[11px] uppercase tracking-[0.1em] text-[#1A1A1A]">Lincoln</th>
+                    <th className="p-6 font-bold text-[11px] uppercase tracking-[0.1em] text-[#1A1A1A]">Mercedes</th>
                   </tr>
                 </thead>
                 <tbody className="text-sm font-medium text-[#1A1A1A]/80">
@@ -190,18 +186,18 @@ export default function Fleet() {
                     <td className="p-6">3 bags</td>
                   </tr>
                   <tr className="border-b border-black/5 hover:bg-black/[0.02] transition-colors">
-                    <td className="p-6 text-[10px] uppercase tracking-[0.15em] font-bold text-[#1A1A1A]/60">Rate Per Mile</td>
+                    <td className="p-6 text-[10px] uppercase tracking-[0.15em] font-bold text-[#1A1A1A]/60">Starting Fare</td>
                     <td className="p-6">$120 (base)</td>
                     <td className="p-6">$140 (base)</td>
                     <td className="p-6">$80 (base)</td>
                     <td className="p-6">$80 (base)</td>
                   </tr>
                   <tr className="bg-[#FCFBF8]/50 border-b border-black/5 hover:bg-black/[0.02] transition-colors">
-                    <td className="p-6 text-[10px] uppercase tracking-[0.15em] font-bold text-[#1A1A1A]/60">Minimum Fare</td>
-                    <td className="p-6">$90</td>
-                    <td className="p-6">$100</td>
-                    <td className="p-6">$80</td>
-                    <td className="p-6">$80</td>
+                    <td className="p-6 text-[10px] uppercase tracking-[0.15em] font-bold text-[#1A1A1A]/60">Extra Mile</td>
+                    <td className="p-6">$2.95/mile</td>
+                    <td className="p-6">$3.40/mile</td>
+                    <td className="p-6">$2.40/mile</td>
+                    <td className="p-6">$2.40/mile</td>
                   </tr>
                   <tr className="border-b border-black/5 hover:bg-black/[0.02] transition-colors">
                     <td className="p-6 text-[10px] uppercase tracking-[0.15em] font-bold text-[#1A1A1A]/60">Wi-Fi</td>
@@ -228,7 +224,6 @@ export default function Fleet() {
               </table>
             </div>
           </div>
-
         </div>
       </div>
     </Layout>
@@ -283,7 +278,7 @@ function VehicleCard({ vehicle, index }: { vehicle: any, index: number }) {
             <div>
               <p className="font-bold text-[#1A1A1A] text-[10px] uppercase tracking-[0.15em]">Starting Fare</p>
               <p className="text-sm font-semibold text-[#1A1A1A]/80 mt-1">{vehicle.minimumFare}</p>
-              <p className="text-[10px] text-[#1A1A1A]/40 mt-0.5">{vehicle.ratePerMile}/mile · one way</p>
+              <p className="text-[10px] text-[#1A1A1A]/40 mt-0.5">{vehicle.extraMileRate}</p>
             </div>
           </div>
         </div>
