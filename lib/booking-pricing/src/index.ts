@@ -17,14 +17,23 @@ export const FLEET_RATES = {
     hourlyRate: 80,
     minimumFare: 120,
   },
-  sedan: {
-    id: "sedan",
-    label: "Sedan",
-    baseFare: 100.00,
+  lincoln: {
+    id: "lincoln",
+    label: "Lincoln Continental",
+    baseFare: 80.00,
+    baseMilesLimit: 15,
+    ratePerExtraMile: 2.40,
+    hourlyRate: 65,
+    minimumFare: 80,
+  },
+  mercedes: {
+    id: "mercedes",
+    label: "Mercedes-Benz S-Class",
+    baseFare: 80.00,
     baseMilesLimit: 15,
     ratePerExtraMile: 2.40,
     hourlyRate: 75,
-    minimumFare: 100,
+    minimumFare: 80,
   },
 } as const;
 
