@@ -23,17 +23,15 @@ import { StripeCheckout } from "@/components/StripeCheckout";
 
 import suburbanImg from "@assets/generated_images/fleet-suburban.jpg";
 import escaladeImg from "@assets/generated_images/fleet-escalade.jpg";
-import lincolnImg from "@assets/generated_images/fleet-lincoln.jpg";
-import mercedesImg from "@assets/generated_images/fleet-mercedes.jpg";
+
 import eclipseLogoTransparent from "@assets/eclipse-logo-new-transparent.png";
 
 /* ─────────────────────────── data ─────────────────────────── */
 
 const vehicles = [
-  { id: "suburban", name: "Chevrolet Suburban", model: "2025", category: "SUV", pax: 7, bags: 6, image: suburbanImg, amenities: ["Wi-Fi", "Privacy glass", "Water"] },
-  { id: "escalade", name: "Cadillac Escalade", model: "2024 ESV", category: "SUV", pax: 7, bags: 6, image: escaladeImg, amenities: ["Sunroof", "Premium audio"] },
-  { id: "lincoln", name: "Lincoln Continental", model: "2024", category: "Sedan", pax: 3, bags: 3, image: lincolnImg, amenities: ["Executive seating"] },
-  { id: "mercedes", name: "Mercedes S-Class", model: "2024", category: "Sedan", pax: 3, bags: 3, image: mercedesImg, amenities: ["Massaging seats"] },
+  { id: "suburban", name: "Suburban", model: "Chevrolet Suburban", category: "SUV", pax: 7, bags: 6, image: suburbanImg, amenities: ["Wi-Fi", "Privacy glass"] },
+  { id: "escalade", name: "Escalade", model: "Cadillac Escalade ESV", category: "SUV", pax: 7, bags: 6, image: escaladeImg, amenities: ["Sunroof", "Premium audio"] },
+  { id: "sedan", name: "Sedan", model: "Luxury Sedan", category: "Sedan", pax: 3, bags: 3, image: lincolnImg, amenities: ["Executive seating", "Massaging seats"] },
 ];
 
 const serviceTypes = [
@@ -522,7 +520,7 @@ export default function Book() {
                       addonFlowers: values.addonFlowers,
                       extraStops: values.extraStops,
                     });
-                    const cardMinimum = BOOKING_VEHICLES[v.id as keyof typeof BOOKING_VEHICLES]?.minimumFare ?? 0;
+                    const cardMinimum = FLEET_RATES[v.id as keyof typeof FLEET_RATES]?.minimumFare ?? 0;
                     const cardTotal = cardPrice.total > 0 ? cardPrice.total : cardMinimum;
                     const hasConfirmedRoute = isHourly || routeMiles !== null;
                     return (
