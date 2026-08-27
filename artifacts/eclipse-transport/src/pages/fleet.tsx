@@ -11,14 +11,14 @@ const vehicles = [
   {
     id: "suburban",
     category: "SUVs",
-    name: "The Suburban",
+    name: "Suburban",
     year: "2025",
     model: "Chevrolet Suburban S",
     description: "The pinnacle of understated luxury. Exceptionally spacious, impeccably maintained, and equipped for the most demanding clientele.",
     capacity: 7,
     luggage: "6 bags",
-    ratePerMile: "$6.20",
-    minimumFare: "$90",
+    minimumFare: " base",
+    extraMileRate: ".95 beyond 15 miles",
     hasWifi: true,
     hasPrivacy: true,
     hasChildSeat: true,
@@ -35,8 +35,8 @@ const vehicles = [
     description: "Commanding presence with refined interiors. Offers an unparalleled ride experience with cutting-edge technology and premium leather seating.",
     capacity: 7,
     luggage: "6 bags",
-    ratePerMile: "$7.15",
-    minimumFare: "$100",
+    minimumFare: " base",
+    extraMileRate: ".40 beyond 15 miles",
     hasWifi: true,
     hasPrivacy: true,
     hasChildSeat: true,
@@ -47,14 +47,14 @@ const vehicles = [
   {
     id: "lincoln",
     category: "Sedans",
-    name: "Executive Sedan",
+    name: "Lincoln Continental",
     year: "2024",
     model: "Lincoln Continental",
     description: "Classic executive elegance. A quiet, smooth journey perfect for airport transfers and corporate travel with ample legroom.",
     capacity: 3,
     luggage: "3 bags",
-    ratePerMile: "$5.60",
-    minimumFare: "$80",
+    minimumFare: " base",
+    extraMileRate: ".40 beyond 15 miles",
     hasWifi: true,
     hasPrivacy: true,
     hasChildSeat: false,
@@ -65,14 +65,14 @@ const vehicles = [
   {
     id: "mercedes",
     category: "Sedans",
-    name: "Luxury Sedan",
+    name: "Mercedes S-Class",
     year: "2024",
     model: "Mercedes-Benz S-Class",
     description: "The ultimate standard in luxury sedans. State-of-the-art safety, exquisite craftsmanship, and an extraordinarily smooth ride.",
     capacity: 3,
     luggage: "3 bags",
-    ratePerMile: "$5.60",
-    minimumFare: "$80",
+    minimumFare: " base",
+    extraMileRate: ".40 beyond 15 miles",
     hasWifi: true,
     hasPrivacy: true,
     hasChildSeat: false,
@@ -191,10 +191,10 @@ export default function Fleet() {
                   </tr>
                   <tr className="border-b border-black/5 hover:bg-black/[0.02] transition-colors">
                     <td className="p-6 text-[10px] uppercase tracking-[0.15em] font-bold text-[#1A1A1A]/60">Rate Per Mile</td>
-                    <td className="p-6">$6.20/mile</td>
-                    <td className="p-6">$7.15/mile</td>
-                    <td className="p-6">$5.60/mile</td>
-                    <td className="p-6">$5.60/mile</td>
+                    <td className="p-6">$120 (base)</td>
+                    <td className="p-6">$140 (base)</td>
+                    <td className="p-6">$80 (base)</td>
+                    <td className="p-6">$80 (base)</td>
                   </tr>
                   <tr className="bg-[#FCFBF8]/50 border-b border-black/5 hover:bg-black/[0.02] transition-colors">
                     <td className="p-6 text-[10px] uppercase tracking-[0.15em] font-bold text-[#1A1A1A]/60">Minimum Fare</td>
