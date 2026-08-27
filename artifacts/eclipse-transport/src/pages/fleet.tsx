@@ -5,8 +5,7 @@ import { motion } from "framer-motion";
 
 import suburbanImg from "@assets/generated_images/fleet-suburban.jpg";
 import escaladeImg from "@assets/generated_images/fleet-escalade.jpg";
-import lincolnImg from "@assets/generated_images/fleet-lincoln.jpg";
-import mercedesImg from "@assets/generated_images/fleet-mercedes.jpg";
+
 
 const vehicles = [
   {
