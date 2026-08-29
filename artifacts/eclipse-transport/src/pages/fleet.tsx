@@ -54,7 +54,7 @@ const vehicles = [
     description: "Classic executive elegance. A quiet, smooth journey perfect for airport transfers and corporate travel with ample legroom.",
     capacity: 3,
     luggage: "3 bags",
-    minimumFare: "$80 base",
+    minimumFare: "$100 base",
     extraMileRate: "$2.40 per mile beyond 15 miles",
     hasWifi: true,
     hasPrivacy: true,
@@ -72,7 +72,7 @@ const vehicles = [
     description: "The ultimate standard in luxury sedans. State-of-the-art safety, exquisite craftsmanship, and an extraordinarily smooth ride.",
     capacity: 3,
     luggage: "3 bags",
-    minimumFare: "$80 base",
+    minimumFare: "$100 base",
     extraMileRate: "$2.40 per mile beyond 15 miles",
     hasWifi: true,
     hasPrivacy: true,
@@ -189,8 +189,8 @@ export default function Fleet() {
                     <td className="p-6 text-[10px] uppercase tracking-[0.15em] font-bold text-[#1A1A1A]/60">Starting Fare</td>
                     <td className="p-6">$120 (base)</td>
                     <td className="p-6">$140 (base)</td>
-                    <td className="p-6">$80 (base)</td>
-                    <td className="p-6">$80 (base)</td>
+                    <td className="p-6">$100 (base)</td>
+                    <td className="p-6">$100 (base)</td>
                   </tr>
                   <tr className="bg-[#FCFBF8]/50 border-b border-black/5 hover:bg-black/[0.02] transition-colors">
                     <td className="p-6 text-[10px] uppercase tracking-[0.15em] font-bold text-[#1A1A1A]/60">Extra Mile</td>
