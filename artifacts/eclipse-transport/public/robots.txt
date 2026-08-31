@@ -1,2 +1,8 @@
 User-agent: *
 Allow: /
+Disallow: /admin
+Disallow: /admin/login
+
+Sitemap: https://eclipsetransportla.com/sitemap.xml
+
+# Eclipse Transport — Luxury Private Car Service in Los Angeles

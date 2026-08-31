@@ -20,6 +20,7 @@ import {
   Car, Church, Wind, MapPin, Clock,
 } from "lucide-react";
 import { StripeCheckout } from "@/components/StripeCheckout";
+import { useSEO } from "@/hooks/useSEO";
 
 import suburbanImg from "@assets/generated_images/fleet-suburban.jpg";
 import escaladeImg from "@assets/generated_images/fleet-escalade.jpg";
@@ -128,6 +129,13 @@ function StepPanel({ children, stepKey }: { children: React.ReactNode; stepKey: 
 /* ─────────────────────────── main ─────────────────────────── */
 
 export default function Book() {
+  useSEO({
+    title: "Book Your Ride — Luxury Car Service Los Angeles",
+    description: "Book your luxury ride with Eclipse Transport in Los Angeles. Airport transfers, corporate travel, weddings & events. Cadillac Escalade, Chevrolet Suburban & Lincoln Continental. Easy online booking, secure payment.",
+    keywords: "book luxury car service Los Angeles, reserve private driver LA, airport transfer booking LAX, online limousine reservation Los Angeles",
+    canonical: "https://eclipsetransportla.com/book",
+  });
+
   const [step, setStep]                       = useState(1);
   const [isSuccess, setIsSuccess]             = useState(false);
   const [clientSecret, setClientSecret]       = useState<string | null>(null);

@@ -583,7 +583,7 @@ function BookingsTab() {
               <table className="w-full text-sm">
                 <thead className="bg-gray-50/50">
                   <tr>
-                    {["Ref", "Passenger", "Service", "Date", "Total", "Status"].map(h => (
+                    {["Ref", "Passenger", "Service", "Date", "Total", "Payment", "Status"].map(h => (
                       <th key={h} className="text-left px-8 py-5 text-[10px] font-bold uppercase tracking-widest text-gray-400 whitespace-nowrap">{h}</th>
                     ))}
                   </tr>
@@ -606,6 +606,11 @@ function BookingsTab() {
                       </td>
                       <td className="px-8 py-5 font-black text-gray-900">
                         {b.totalPrice ? `$${b.totalPrice}` : <span className="text-gray-300 font-normal text-xs">TBD</span>}
+                      </td>
+                      <td className="px-8 py-5">
+                        <span className={`px-2 py-1 text-[10px] font-bold uppercase tracking-wider rounded-full ${b.paymentStatus === 'paid' ? 'bg-green-50 text-green-700' : b.paymentStatus === 'refunded' ? 'bg-red-50 text-red-700' : 'bg-yellow-50 text-yellow-700'}`}>
+                          {b.paymentStatus || 'pending'}
+                        </span>
                       </td>
                       <td className="px-8 py-5"><StatusBadge status={b.status} /></td>
                     </tr>
@@ -666,6 +671,29 @@ function BookingsTab() {
             <div>
               <h3 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-4">Payment</h3>
               <div className="bg-white border border-gray-100 p-6 rounded-2xl shadow-sm">
+                <div className="flex items-center justify-between mb-4 pb-4 border-b border-gray-100">
+                  <span className="font-bold text-gray-900">Payment Status</span>
+                  <select
+                    className={`border rounded-xl px-4 py-2 font-bold text-xs outline-none transition-colors ${detailBooking.paymentStatus === 'paid' ? 'bg-green-50 text-green-700 border-green-200' : detailBooking.paymentStatus === 'refunded' ? 'bg-red-50 text-red-700 border-red-200' : 'bg-yellow-50 text-yellow-700 border-yellow-200'}`}
+                    value={detailBooking.paymentStatus ?? "pending"}
+                    onChange={e => updateBooking.mutate({ id: detailBooking.id, data: { paymentStatus: e.target.value } }, {
+                      onSuccess: () => qc.invalidateQueries({ queryKey: getGetBookingQueryKey(detailBooking.id) })
+                    })}
+                    disabled={updateBooking.isPending}
+                  >
+                    <option value="pending">Pending</option>
+                    <option value="paid">Paid</option>
+                    <option value="refunded">Refunded</option>
+                  </select>
+                </div>
+                {detailBooking.stripePaymentIntentId && (
+                  <div className="mb-4 pb-4 border-b border-gray-100 flex justify-between items-center">
+                    <span className="font-bold text-gray-900">Stripe ID</span>
+                    <a href={`https://dashboard.stripe.com/payments/${detailBooking.stripePaymentIntentId}`} target="_blank" rel="noopener noreferrer" className="text-blue-500 font-mono text-[10px] hover:underline bg-blue-50 px-3 py-1.5 rounded-full truncate max-w-[150px]">
+                      {detailBooking.stripePaymentIntentId}
+                    </a>
+                  </div>
+                )}
                 <div className="flex items-center justify-between">
                   <span className="font-bold text-gray-900">Total Amount</span>
                   <div className="flex items-center gap-3">

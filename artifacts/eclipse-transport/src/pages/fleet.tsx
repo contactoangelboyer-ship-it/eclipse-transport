@@ -2,6 +2,7 @@ import { Layout } from "@/components/layout/Layout";
 import { Link } from "wouter";
 import { Users, Wifi, Briefcase, CheckCircle2 } from "lucide-react";
 import { motion } from "framer-motion";
+import { useSEO } from "@/hooks/useSEO";
 
 import suburbanImg from "@assets/generated_images/fleet-suburban.jpg";
 import escaladeImg from "@assets/generated_images/fleet-escalade.jpg";
@@ -84,6 +85,13 @@ const vehicles = [
 ];
 
 export default function Fleet() {
+  useSEO({
+    title: "Our Fleet — Cadillac Escalade, Chevrolet Suburban & Lincoln Continental",
+    description: "Eclipse Transport's luxury fleet in Los Angeles: Cadillac Escalade ESV, Chevrolet Suburban, Lincoln Continental & Mercedes-Benz S-Class. Premium SUVs and sedans for airport transfers, corporate travel, weddings & events.",
+    keywords: "Cadillac Escalade limo Los Angeles, Chevrolet Suburban chauffeur LA, Lincoln Continental car service, Mercedes S-Class limo LA, luxury SUV car service Los Angeles, black car fleet LA",
+    canonical: "https://eclipsetransportla.com/fleet",
+  });
+
   const suvs = vehicles.filter(v => v.category === "SUVs");
   const sedans = vehicles.filter(v => v.category === "Sedans");
 

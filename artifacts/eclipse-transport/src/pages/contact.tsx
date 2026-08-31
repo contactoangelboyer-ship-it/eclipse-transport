@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { useSubmitContact } from "@workspace/api-client-react";
 import { CheckCircle2, Loader2, Phone, Mail, MapPin, MessageCircle } from "lucide-react";
 import { ChatWidget } from "@/components/ChatWidget";
+import { useSEO } from "@/hooks/useSEO";
 
 const contactSchema = z.object({
   name: z.string().min(1, "Name is required"),
@@ -22,6 +23,13 @@ const contactSchema = z.object({
 type ContactFormValues = z.infer<typeof contactSchema>;
 
 export default function Contact() {
+  useSEO({
+    title: "Contact Us — Luxury Car Service in Los Angeles",
+    description: "Contact Eclipse Transport for luxury private car service in Los Angeles. Airport transfers, corporate travel, weddings & events. Available 24/7. Get a quote or make a reservation today.",
+    keywords: "contact Eclipse Transport, luxury car service quote Los Angeles, book private driver LA, limousine reservation Los Angeles",
+    canonical: "https://eclipsetransportla.com/contact",
+  });
+
   const [isSuccess, setIsSuccess] = useState(false);
   const submitContact = useSubmitContact();
 

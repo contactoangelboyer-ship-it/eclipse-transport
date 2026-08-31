@@ -8,6 +8,7 @@ import {
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import serviceAirport from "@assets/generated_images/service-airport.jpg";
 import serviceCorporate from "@assets/generated_images/service-corporate.jpg";
+import { useSEO } from "@/hooks/useSEO";
 
 function getServiceIcon(iconName: string, className = "w-6 h-6") {
   switch (iconName?.toLowerCase()) {
@@ -183,6 +184,13 @@ const serviceAreas = [
 ];
 
 export default function Services() {
+  useSEO({
+    title: "Luxury Transportation Services in Los Angeles",
+    description: "Eclipse Transport offers premium transportation services in Los Angeles: airport transfers to LAX, BUR, LGB & SNA, corporate travel, wedding car service, hourly chauffeur, concerts, proms & date nights. Book online.",
+    keywords: "luxury transportation services Los Angeles, airport transfer LAX, corporate car service LA, wedding limo Los Angeles, prom limo LA, concert transportation Los Angeles, chauffeur by the hour LA",
+    canonical: "https://eclipsetransportla.com/services",
+  });
+
   // Try API but never block rendering — static data shows immediately.
   // retry:0 so failures are instant instead of 30s of retries.
   const { data: apiServices } = useListServices({ query: { retry: 0, queryKey: ["listServices"] } });

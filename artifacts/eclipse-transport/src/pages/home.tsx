@@ -4,6 +4,7 @@ import { TestimonialsCarousel } from "@/components/TestimonialsCarousel";
 import { ArrowRight, Clock, ShieldCheck, Star } from "lucide-react";
 import { motion, useScroll, useTransform, AnimatePresence } from "framer-motion";
 import { useRef, useState, useEffect } from "react";
+import { useSEO } from "@/hooks/useSEO";
 
 import heroImg from "@assets/generated_images/hero-la-street.jpg";
 import fleetPreviewImg from "@assets/generated_images/fleet-preview.jpg";
@@ -46,6 +47,13 @@ function RotatingTitle() {
 }
 
 export default function Home() {
+  useSEO({
+    title: "Luxury Private Car Service in Los Angeles",
+    description: "Eclipse Transport — Premium black car service in Los Angeles. Airport transfers to LAX, BUR, LGB & SNA. Corporate travel, weddings, proms & events. Cadillac Escalade, Chevrolet Suburban & Lincoln Continental. Professional chauffeurs available 24/7.",
+    keywords: "luxury car service Los Angeles, private driver LA, limo service LAX, airport transfer Los Angeles, black car service LA, chauffeur service Los Angeles, Escalade limo LA, corporate transportation Los Angeles",
+    canonical: "https://eclipsetransportla.com/",
+  });
+
   const heroRef = useRef(null);
   const { scrollYProgress } = useScroll({
     target: heroRef,
