@@ -274,7 +274,6 @@ export const AdminListFleetResponseItem = zod.object({
   "amenities": zod.array(zod.string()).optional(),
   "vehicleType": zod.string().optional(),
   "luggageCapacity": zod.number().optional(),
-  "ratePerMile": zod.number().optional(),
   "flatRate": zod.number().optional(),
   "hourlyRate": zod.number().optional()
 })
@@ -296,8 +295,6 @@ export const adminCreateFleetBodyFlatRateMin = 0;
 
 export const adminCreateFleetBodyHourlyRateMin = 0;
 
-export const adminCreateFleetBodyRatePerMileMin = 0;
-
 
 
 export const AdminCreateFleetBody = zod.object({
@@ -310,7 +307,6 @@ export const AdminCreateFleetBody = zod.object({
   "amenities": zod.array(zod.string()).optional(),
   "vehicleType": zod.string().optional(),
   "luggageCapacity": zod.number().min(adminCreateFleetBodyLuggageCapacityMin).optional(),
-  "ratePerMile": zod.number().min(adminCreateFleetBodyRatePerMileMin).optional(),
   "flatRate": zod.number().min(adminCreateFleetBodyFlatRateMin).optional(),
   "hourlyRate": zod.number().min(adminCreateFleetBodyHourlyRateMin).optional()
 })
@@ -326,7 +322,6 @@ export const AdminCreateFleetResponse = zod.object({
   "amenities": zod.array(zod.string()).optional(),
   "vehicleType": zod.string().optional(),
   "luggageCapacity": zod.number().optional(),
-  "ratePerMile": zod.number().optional(),
   "flatRate": zod.number().optional(),
   "hourlyRate": zod.number().optional()
 })
@@ -351,8 +346,6 @@ export const adminUpdateFleetBodyFlatRateMin = 0;
 
 export const adminUpdateFleetBodyHourlyRateMin = 0;
 
-export const adminUpdateFleetBodyRatePerMileMin = 0;
-
 
 
 export const AdminUpdateFleetBody = zod.object({
@@ -365,7 +358,6 @@ export const AdminUpdateFleetBody = zod.object({
   "amenities": zod.array(zod.string()).optional(),
   "vehicleType": zod.string().optional(),
   "luggageCapacity": zod.number().min(adminUpdateFleetBodyLuggageCapacityMin).optional(),
-  "ratePerMile": zod.number().min(adminUpdateFleetBodyRatePerMileMin).optional(),
   "flatRate": zod.number().min(adminUpdateFleetBodyFlatRateMin).optional(),
   "hourlyRate": zod.number().min(adminUpdateFleetBodyHourlyRateMin).optional()
 })
@@ -381,7 +373,6 @@ export const AdminUpdateFleetResponse = zod.object({
   "amenities": zod.array(zod.string()).optional(),
   "vehicleType": zod.string().optional(),
   "luggageCapacity": zod.number().optional(),
-  "ratePerMile": zod.number().optional(),
   "flatRate": zod.number().optional(),
   "hourlyRate": zod.number().optional()
 })

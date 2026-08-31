@@ -15,6 +15,8 @@ export const bookingsTable = pgTable("bookings", {
   passengers: integer("passengers").notNull().default(1),
   specialRequests: text("special_requests"),
   status: text("status").notNull().default("pending"),
+  paymentStatus: text("payment_status").notNull().default("pending"),
+  stripePaymentIntentId: text("stripe_payment_intent_id"),
   totalPrice: real("total_price"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),

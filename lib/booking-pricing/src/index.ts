@@ -1,37 +1,37 @@
-export const FLEET_RATES = {
-  escalade: {
-    id: "escalade",
-    label: "Cadillac Escalade",
-    baseFare: 140.00,
-    baseMilesLimit: 15,
-    ratePerExtraMile: 3.40,
-    hourlyRate: 95,
-    minimumFare: 140,
-  },
+export const BOOKING_VEHICLES = {
   suburban: {
     id: "suburban",
-    label: "Suburban",
-    baseFare: 120.00,
+    label: "Chevrolet Suburban",
+    baseFare: 140.00,
     baseMilesLimit: 15,
-    ratePerExtraMile: 2.95,
+    ratePerMile: 2.95,
     hourlyRate: 80,
-    minimumFare: 120,
+    minimumFare: 140, // Base Price (15 miles included)
+  },
+  escalade: {
+    id: "escalade",
+    label: "Cadillac Escalade ESV",
+    baseFare: 140.00,
+    baseMilesLimit: 15,
+    ratePerMile: 3.40,
+    hourlyRate: 95,
+    minimumFare: 140, // Base Price (15 miles included)
   },
   sedan: {
     id: "sedan",
     label: "Luxury Sedan",
     baseFare: 100.00,
     baseMilesLimit: 15,
-    ratePerExtraMile: 2.40,
+    ratePerMile: 2.40,
     hourlyRate: 75,
-    minimumFare: 100,
+    minimumFare: 100, // Base Price (15 miles included)
   },
   lincoln: {
     id: "lincoln",
     label: "Lincoln Continental",
     baseFare: 100.00,
     baseMilesLimit: 15,
-    ratePerExtraMile: 2.40,
+    ratePerMile: 2.40,
     hourlyRate: 75,
     minimumFare: 100,
   },
@@ -40,13 +40,13 @@ export const FLEET_RATES = {
     label: "Mercedes-Benz S-Class",
     baseFare: 100.00,
     baseMilesLimit: 15,
-    ratePerExtraMile: 2.40,
+    ratePerMile: 2.40,
     hourlyRate: 75,
     minimumFare: 100,
   },
 } as const;
 
-export type FleetVehicleId = keyof typeof FLEET_RATES;
+export type FleetVehicleId = keyof typeof BOOKING_VEHICLES;
 
 export const BOOKING_ADDON_PRICES = {
   meetGreet: 25,
@@ -77,10 +77,7 @@ export type BookingPriceBreakdown = {
 const roundMoney = (value: number) => Math.round((value + Number.EPSILON) * 100) / 100;
 
 export function calculateBookingPrice(input: BookingPriceInput): BookingPriceBreakdown {
-  const vehicle = FLEET_RATES[input.vehicleId as FleetVehicleId];
-  if (!vehicle) {
-    return { baseRate: 0, addonsTotal: 0, gratuity: 0, total: 0, minimumApplied: false };
-  }
+  const vehicle = BOOKING_VEHICLES[input.vehicleId as keyof typeof BOOKING_VEHICLES] || BOOKING_VEHICLES.suburban;
 
   const isHourly = input.tripType === "By the Hour";
   const duration = Math.max(1, Number(input.duration) || 3);
@@ -91,14 +88,13 @@ export function calculateBookingPrice(input: BookingPriceInput): BookingPriceBre
   if (isHourly) {
     baseRate = vehicle.hourlyRate * duration;
   } else if (miles != null && Number.isFinite(miles) && miles >= 0) {
-    if (miles <= vehicle.baseMilesLimit) {
-      baseRate = vehicle.baseFare;
-    } else {
-      baseRate = vehicle.baseFare + (miles - vehicle.baseMilesLimit) * vehicle.ratePerExtraMile;
-    }
-    minimumApplied = baseRate <= vehicle.minimumFare;
-    if (minimumApplied) {
+    if (miles <= 15) {
       baseRate = vehicle.minimumFare;
+      minimumApplied = true;
+    } else {
+      const extraMiles = miles - 15;
+      baseRate = vehicle.minimumFare + (extraMiles * vehicle.ratePerMile);
+      minimumApplied = false;
     }
   }
 
