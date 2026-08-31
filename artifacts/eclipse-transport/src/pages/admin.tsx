@@ -997,7 +997,12 @@ function FleetTab() {
           <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-5">
             {fleet.map(v => (
               <div key={v.id} className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden hover:shadow-md transition-shadow group">
-                {v.imageUrl && <div className="h-48 overflow-hidden"><img src={v.imageUrl} alt={v.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" /></div>}
+                <div className="h-48 overflow-hidden bg-gray-50 flex items-center justify-center">
+                  {v.imageUrl
+                    ? <img src={v.imageUrl} alt={v.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                    : <Car size={48} className="text-gray-200" />
+                  }
+                </div>
                 <div className="p-6 space-y-3">
                   <div className="flex items-start justify-between">
                     <div>
@@ -1780,7 +1785,12 @@ function PerVehicleRates() {
           {fleet.map(v => (
             <div key={v.id} className="flex items-center justify-between gap-4 py-2 border-b border-gray-50 last:border-0">
               <div className="flex items-center gap-3 flex-1 min-w-0">
-                {v.imageUrl && <img src={v.imageUrl} alt={v.name} className="w-10 h-10 rounded-xl object-cover shrink-0" />}
+                <div className="w-10 h-10 rounded-xl overflow-hidden bg-gray-100 shrink-0 flex items-center justify-center">
+                  {v.imageUrl
+                    ? <img src={v.imageUrl} alt={v.name} className="w-full h-full object-cover" />
+                    : <Car size={18} className="text-gray-300" />
+                  }
+                </div>
                 <div className="min-w-0">
                   <p className="font-bold text-gray-900 text-sm truncate">{v.name}</p>
                   <p className="text-xs text-gray-400 font-medium">{v.model}</p>

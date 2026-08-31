@@ -24,15 +24,16 @@ import { useSEO } from "@/hooks/useSEO";
 
 import suburbanImg from "@assets/generated_images/fleet-suburban.jpg";
 import escaladeImg from "@assets/generated_images/fleet-escalade.jpg";
+import lincolnImg from "@assets/generated_images/fleet-lincoln.jpg";
 
 import eclipseLogoTransparent from "@assets/eclipse-logo-new-transparent.png";
 
 /* ─────────────────────────── data ─────────────────────────── */
 
 const vehicles = [
-  { id: "suburban", name: "Suburban", model: "Chevrolet Suburban", category: "SUV", pax: 7, bags: 6, image: suburbanImg, amenities: ["Wi-Fi", "Privacy glass"] },
-  { id: "escalade", name: "Escalade", model: "Cadillac Escalade ESV", category: "SUV", pax: 7, bags: 6, image: escaladeImg, amenities: ["Sunroof", "Premium audio"] },
-  { id: "sedan", name: "Sedan", model: "Luxury Sedan", category: "Sedan", pax: 3, bags: 3, image: lincolnImg, amenities: ["Executive seating", "Massaging seats"] },
+  { id: "suburban", name: "Suburban", model: "Chevrolet Suburban",     category: "SUV",   pax: 7, bags: 6, image: suburbanImg, amenities: ["Wi-Fi", "Privacy glass"] },
+  { id: "escalade", name: "Escalade", model: "Cadillac Escalade ESV",  category: "SUV",   pax: 7, bags: 6, image: escaladeImg, amenities: ["Sunroof", "Premium audio"] },
+  { id: "sedan",    name: "Sedan",    model: "Luxury Sedan",           category: "Sedan", pax: 3, bags: 3, image: lincolnImg,  amenities: ["Executive seating", "Massaging seats"] },
 ];
 
 const serviceTypes = [
@@ -528,7 +529,7 @@ export default function Book() {
                       addonFlowers: values.addonFlowers,
                       extraStops: values.extraStops,
                     });
-                    const cardMinimum = FLEET_RATES[v.id as keyof typeof FLEET_RATES]?.minimumFare ?? 0;
+                    const cardMinimum = BOOKING_VEHICLES[v.id as keyof typeof BOOKING_VEHICLES]?.minimumFare ?? 0;
                     const cardTotal = cardPrice.total > 0 ? cardPrice.total : cardMinimum;
                     const hasConfirmedRoute = isHourly || routeMiles !== null;
                     return (
@@ -671,6 +672,7 @@ export default function Book() {
               <StepPanel stepKey={5}>
                 <div className="px-5 pt-8 pb-5">
                   <h1 className="text-[32px] font-bold tracking-tight text-gray-900">Review & Pay</h1>
+                  <p className="text-gray-400 text-[13px] mt-1">Secure payment via Stripe. Your info is encrypted.</p>
                 </div>
                 <div className="px-5 space-y-4">
                   {/* Summary card */}
@@ -678,7 +680,7 @@ export default function Book() {
                     <div className="absolute -right-8 -top-8 w-36 h-36 bg-white/5 rounded-full blur-2xl" />
                     <p className="text-[11px] font-bold text-gray-500 uppercase tracking-widest mb-1">Total Fare</p>
                     <p className="text-[46px] font-black tracking-tight leading-none mb-5">{formatUsd(displayTotal)}</p>
-                    <div className="space-y-2.5 text-sm text-gray-300 border-t border-gray-800 pt-4">
+                    <div className="space-y-2 text-sm text-gray-300 border-t border-gray-800 pt-4">
                       <div className="flex justify-between">
                         <span>Service</span>
                         <span className="text-white font-medium">{selService?.label || values.serviceType}</span>
@@ -695,8 +697,49 @@ export default function Book() {
                         <span>Passenger</span>
                         <span className="text-white font-medium">{values.passengerName}</span>
                       </div>
+                      {routeMiles != null && !isHourly && (
+                        <div className="flex justify-between">
+                          <span>Distance</span>
+                          <span className="text-white font-medium">{routeMiles.toFixed(1)} mi</span>
+                        </div>
+                      )}
                     </div>
                   </div>
+
+                  {/* Price breakdown */}
+                  {priceBreakdown.baseRate > 0 && (
+                    <div className="bg-gray-50 rounded-2xl p-5 space-y-2 text-sm">
+                      <p className="text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-3">Price Breakdown</p>
+                      <div className="flex justify-between text-gray-700">
+                        <span>
+                          {isHourly
+                            ? `Base rate (${values.duration || 3} hrs × ${formatUsd(BOOKING_VEHICLES[values.vehicleId as keyof typeof BOOKING_VEHICLES]?.hourlyRate ?? 0)}/hr)`
+                            : `Base fare (includes first 15 mi)`}
+                        </span>
+                        <span className="font-semibold">{formatUsd(BOOKING_VEHICLES[values.vehicleId as keyof typeof BOOKING_VEHICLES]?.minimumFare ?? priceBreakdown.baseRate)}</span>
+                      </div>
+                      {!isHourly && routeMiles != null && routeMiles > 15 && (
+                        <div className="flex justify-between text-gray-700">
+                          <span>{(routeMiles - 15).toFixed(1)} extra mi × {formatUsd(BOOKING_VEHICLES[values.vehicleId as keyof typeof BOOKING_VEHICLES]?.ratePerMile ?? 0)}</span>
+                          <span className="font-semibold">{formatUsd(priceBreakdown.baseRate - (BOOKING_VEHICLES[values.vehicleId as keyof typeof BOOKING_VEHICLES]?.minimumFare ?? 0))}</span>
+                        </div>
+                      )}
+                      {priceBreakdown.addonsTotal > 0 && (
+                        <div className="flex justify-between text-gray-700">
+                          <span>Add-ons</span>
+                          <span className="font-semibold">{formatUsd(priceBreakdown.addonsTotal)}</span>
+                        </div>
+                      )}
+                      <div className="flex justify-between text-gray-700">
+                        <span>Gratuity (20%)</span>
+                        <span className="font-semibold">{formatUsd(priceBreakdown.gratuity)}</span>
+                      </div>
+                      <div className="flex justify-between font-bold text-gray-900 border-t border-gray-200 pt-2 mt-1">
+                        <span>Total</span>
+                        <span>{formatUsd(displayTotal)}</span>
+                      </div>
+                    </div>
+                  )}
 
                   {/* Errors */}
                   {bookingError && (
