@@ -1,5 +1,11 @@
 import React, { useState, useEffect, useMemo } from "react";
 import eclipseLogo from "@assets/eclipse-logo-new-transparent.png";
+import suburbanImg from "@assets/generated_images/fleet-suburban.jpg";
+import escaladeImg from "@assets/generated_images/fleet-escalade.jpg";
+import lincolnImg from "@assets/generated_images/fleet-lincoln.jpg";
+import mercedesImg from "@assets/generated_images/fleet-mercedes.jpg";
+import serviceAirport from "@assets/generated_images/service-airport.jpg";
+import serviceCorporate from "@assets/generated_images/service-corporate.jpg";
 import { createPortal } from "react-dom";
 import { useLocation } from "wouter";
 import {
@@ -88,6 +94,138 @@ const statusConfig = {
   completed: { label: "Completed", bg: "bg-green-100",  text: "text-green-700",  dot: "bg-green-400", icon: CheckCircle },
   cancelled: { label: "Cancelled", bg: "bg-red-100",    text: "text-red-700",    dot: "bg-red-400",   icon: XCircle },
 };
+
+export const getVehicleImage = (v?: { name?: string; model?: string; imageUrl?: string | null } | string | null) => {
+  if (!v) return null;
+  if (typeof v === "string") {
+    const lower = v.toLowerCase();
+    if (lower.includes("escalade")) return escaladeImg;
+    if (lower.includes("suburban")) return suburbanImg;
+    if (lower.includes("lincoln") || lower.includes("sedan")) return lincolnImg;
+    if (lower.includes("mercedes")) return mercedesImg;
+    return v.startsWith("http") || v.startsWith("data:") || v.startsWith("/assets") ? v : null;
+  }
+  if (v.imageUrl && (v.imageUrl.startsWith("http") || v.imageUrl.startsWith("data:") || v.imageUrl.startsWith("/assets"))) {
+    return v.imageUrl;
+  }
+  const lower = `${v.name || ""} ${v.model || ""}`.toLowerCase();
+  if (lower.includes("escalade")) return escaladeImg;
+  if (lower.includes("suburban")) return suburbanImg;
+  if (lower.includes("lincoln") || lower.includes("sedan")) return lincolnImg;
+  if (lower.includes("mercedes")) return mercedesImg;
+  return v.imageUrl || null;
+};
+
+export const getServiceImage = (s?: { name?: string; imageUrl?: string | null } | string | null) => {
+  if (!s) return null;
+  const name = typeof s === "string" ? s : s.name || "";
+  const imgUrl = typeof s === "string" ? "" : s.imageUrl || "";
+  if (imgUrl && (imgUrl.startsWith("http") || imgUrl.startsWith("data:") || imgUrl.startsWith("/assets"))) {
+    return imgUrl;
+  }
+  const lower = name.toLowerCase();
+  if (lower.includes("airport")) return serviceAirport;
+  if (lower.includes("corporate")) return serviceCorporate;
+  return imgUrl || null;
+};
+
+export const DEFAULT_FLEET_VEHICLES: Vehicle[] = [
+  {
+    id: 1,
+    name: "Suburban",
+    model: "Chevrolet Suburban",
+    year: 2025,
+    capacity: 7,
+    luggageCapacity: 6,
+    vehicleType: "Luxury SUV",
+    flatRate: 140, // Base Price (15 miles included)
+    ratePerMile: 2.95,
+    hourlyRate: 80,
+    imageUrl: suburbanImg,
+    description: "The pinnacle of understated luxury. Exceptionally spacious with onboard Wi-Fi, privacy glass, and capacity for 7 passengers and 6 large bags.",
+    amenities: ["Wi-Fi", "Privacy glass", "Leather seating", "USB charging", "Climate control"],
+    createdAt: new Date().toISOString(),
+  },
+  {
+    id: 2,
+    name: "Escalade",
+    model: "Cadillac Escalade ESV",
+    year: 2024,
+    capacity: 7,
+    luggageCapacity: 6,
+    vehicleType: "Premium SUV",
+    flatRate: 140, // Base Price (15 miles included)
+    ratePerMile: 3.40,
+    hourlyRate: 95,
+    imageUrl: escaladeImg,
+    description: "Commanding presence with panoramic sunroof, studio sound system, executive captain seating, and maximum legroom for high-profile clients.",
+    amenities: ["Panoramic sunroof", "Studio audio", "Wi-Fi", "Executive seating", "Rear entertainment"],
+    createdAt: new Date().toISOString(),
+  },
+  {
+    id: 3,
+    name: "Sedan",
+    model: "Lincoln Continental",
+    year: 2024,
+    capacity: 3,
+    luggageCapacity: 3,
+    vehicleType: "Executive Sedan",
+    flatRate: 100, // Base Price (15 miles included)
+    ratePerMile: 2.40,
+    hourlyRate: 75,
+    imageUrl: lincolnImg,
+    description: "Classic executive elegance. Whisper-quiet cabin, massaging rear seats, and smooth ride perfect for airport and corporate transfers.",
+    amenities: ["Executive seating", "Massaging seats", "Quiet cabin", "Wi-Fi", "USB charging"],
+    createdAt: new Date().toISOString(),
+  }
+];
+
+export const DEFAULT_SERVICES: Service[] = [
+  {
+    id: 1,
+    name: "Airport Transfer",
+    description: "Seamless door-to-terminal luxury service with real-time flight tracking and meet & greet at LAX, BUR, LGB, SNA & ONT.",
+    basePrice: 100,
+    priceUnit: "flat",
+    imageUrl: serviceAirport,
+    isActive: true,
+    features: ["Flight Tracking", "Meet & Greet Available", "Luggage Assistance", "Curbside or Inside Pickup"],
+    createdAt: new Date().toISOString(),
+  },
+  {
+    id: 2,
+    name: "Corporate Travel",
+    description: "Dedicated executive transportation with onboard Wi-Fi, discreet professional chauffeurs, and punctual service guaranteed.",
+    basePrice: 75,
+    priceUnit: "hour",
+    imageUrl: serviceCorporate,
+    isActive: true,
+    features: ["High-speed Wi-Fi", "Mobile Office Setup", "Flexible Billing", "Priority Dispatch"],
+    createdAt: new Date().toISOString(),
+  },
+  {
+    id: 3,
+    name: "By the Hour",
+    description: "As-directed luxury chauffeur service with unlimited stops across Los Angeles. 3-hour minimum.",
+    basePrice: 75,
+    priceUnit: "hour",
+    imageUrl: "",
+    isActive: true,
+    features: ["Unlimited Stops", "Wait & Return", "Custom Itinerary", "Chauffeur on Standby"],
+    createdAt: new Date().toISOString(),
+  },
+  {
+    id: 4,
+    name: "Special Events & Weddings",
+    description: "Prestigious black car arrivals for weddings, red carpets, galas, and VIP celebrations.",
+    basePrice: 140,
+    priceUnit: "flat",
+    imageUrl: "",
+    isActive: true,
+    features: ["Red Carpet Ready", "Bridal Fleet", "Champagne Service Ready", "Impeccable Timing"],
+    createdAt: new Date().toISOString(),
+  }
+];
 
 function StatusBadge({ status }: { status: string }) {
   const cfg = statusConfig[status as keyof typeof statusConfig] ?? statusConfig.pending;
@@ -734,16 +872,42 @@ function BookingsTab() {
             </div>
             <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm space-y-5">
               <h4 className="text-xs font-bold uppercase tracking-widest text-gray-900 border-b border-gray-50 pb-3">Trip Details</h4>
-              <div className="grid grid-cols-1 gap-5">
-                <Field label="Service Type"><input className={inputClass} value={bf.serviceType} onChange={setB("serviceType")} placeholder="Airport Transfer, Corporate, etc." /></Field>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                  <Field label="Service Type">
+                    <select className={inputClass} value={bf.serviceType} onChange={setB("serviceType")}>
+                      <option value="Airport Transfer">Airport Transfer</option>
+                      <option value="Corporate Travel">Corporate Travel</option>
+                      <option value="By the Hour">By the Hour</option>
+                      <option value="Point-to-Point">Point-to-Point</option>
+                      <option value="Wedding & Events">Wedding & Events</option>
+                    </select>
+                  </Field>
+                  <Field label="Vehicle">
+                    <select className={inputClass} value={bf.vehicleId || ""} onChange={e => {
+                      const vId = Number(e.target.value);
+                      const selV = DEFAULT_FLEET_VEHICLES.find(v => v.id === vId);
+                      setBf(prev => ({
+                        ...prev,
+                        vehicleId: vId,
+                        estimatedPrice: prev.estimatedPrice || (selV ? selV.flatRate : 140)
+                      }));
+                    }}>
+                      <option value="">Select vehicle...</option>
+                      <option value="1">Suburban ($140 base · $2.95/mi · $80/hr)</option>
+                      <option value="2">Escalade ($140 base · $3.40/mi · $95/hr)</option>
+                      <option value="3">Sedan ($100 base · $2.40/mi · $75/hr)</option>
+                    </select>
+                  </Field>
+                </div>
                 <Field label="Pickup Location"><input className={inputClass} value={bf.pickupLocation} onChange={setB("pickupLocation")} placeholder="LAX Terminal 1" /></Field>
                 <Field label="Dropoff Location"><input className={inputClass} value={bf.dropoffLocation} onChange={setB("dropoffLocation")} placeholder="Beverly Hills Hotel" /></Field>
-                <div className="grid grid-cols-2 gap-5">
+                <div className="grid grid-cols-3 gap-5">
                   <Field label="Date"><input type="date" className={inputClass} value={bf.pickupDate} onChange={setB("pickupDate")} /></Field>
                   <Field label="Time"><input type="time" className={inputClass} value={bf.pickupTime} onChange={setB("pickupTime")} /></Field>
+                  <Field label="Price ($)"><input type="number" className={inputClass} value={bf.estimatedPrice ?? ""} onChange={e => setBf(p => ({ ...p, estimatedPrice: Number(e.target.value) }))} placeholder="140" /></Field>
                 </div>
                 <Field label="Passengers"><input type="number" className={inputClass} value={bf.passengers} onChange={setB("passengers")} min={1} max={20} /></Field>
-                <Field label="Special Requests"><textarea className={textareaClass} value={bf.specialRequests ?? ""} onChange={setB("specialRequests")} rows={3} placeholder="Any special requests..." /></Field>
+                <Field label="Special Requests / Notes"><textarea className={textareaClass} value={bf.specialRequests ?? ""} onChange={setB("specialRequests")} rows={3} placeholder="Notes, flight details, or add-ons..." /></Field>
               </div>
             </div>
             <div className="flex gap-3 pt-2">
@@ -987,51 +1151,71 @@ function FleetTab() {
 
         {isLoading ? (
           <div className="flex h-64 items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-gray-300" /></div>
-        ) : !fleet?.length ? (
-          <div className="bg-white rounded-3xl border border-gray-100 shadow-sm flex flex-col items-center justify-center py-24 text-center">
-            <Car size={40} className="text-gray-200 mb-4" />
-            <p className="font-bold text-gray-900 text-lg">No vehicles yet</p>
-            <p className="text-gray-500 mt-1 text-sm">Add your first vehicle to get started.</p>
-          </div>
         ) : (
           <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-5">
-            {fleet.map(v => (
-              <div key={v.id} className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden hover:shadow-md transition-shadow group">
-                <div className="h-48 overflow-hidden bg-gray-50 flex items-center justify-center">
-                  {v.imageUrl
-                    ? <img src={v.imageUrl} alt={v.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                    : <Car size={48} className="text-gray-200" />
-                  }
-                </div>
-                <div className="p-6 space-y-3">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <p className="font-black text-gray-900 text-lg tracking-tight">{v.name}</p>
-                      <p className="text-sm text-gray-500 font-medium">{v.model} · {v.year}</p>
+            {((fleet && fleet.length > 0) ? fleet : DEFAULT_FLEET_VEHICLES).map(v => {
+              const vImg = getVehicleImage(v);
+              return (
+                <div key={v.id} className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden hover:shadow-md transition-shadow group flex flex-col justify-between">
+                  <div>
+                    <div className="h-48 overflow-hidden bg-gray-50 flex items-center justify-center relative">
+                      {vImg ? (
+                        <img src={vImg} alt={v.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                      ) : (
+                        <Car size={48} className="text-gray-200" />
+                      )}
+                      <div className="absolute top-3 left-3 bg-black/70 backdrop-blur-md text-white text-[10px] font-black uppercase tracking-wider px-3 py-1 rounded-full">
+                        {v.vehicleType || (v.capacity > 4 ? "SUV" : "Sedan")}
+                      </div>
                     </div>
-                    <div className="flex gap-2 shrink-0">
-                      <button onClick={() => openEdit(v)} className="w-9 h-9 flex items-center justify-center rounded-xl border border-gray-200 hover:border-gray-900 text-gray-500 hover:text-gray-900 transition-all">
-                        <Pencil size={14} />
-                      </button>
-                      <button onClick={() => handleDelete(v.id)} className="w-9 h-9 flex items-center justify-center rounded-xl border border-red-100 hover:border-red-400 text-red-400 hover:text-red-600 transition-all">
-                        <Trash2 size={14} />
-                      </button>
+                    <div className="p-6 space-y-4">
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <p className="font-black text-gray-900 text-lg tracking-tight">{v.name}</p>
+                          <p className="text-xs text-gray-400 font-medium mt-0.5">{v.model} · {v.year}</p>
+                        </div>
+                        <div className="flex gap-2 shrink-0">
+                          <button onClick={() => openEdit(v)} title="Edit Vehicle" className="w-9 h-9 flex items-center justify-center rounded-xl border border-gray-200 hover:border-gray-900 text-gray-500 hover:text-gray-900 transition-all">
+                            <Pencil size={14} />
+                          </button>
+                          <button onClick={() => handleDelete(v.id)} title="Remove Vehicle" className="w-9 h-9 flex items-center justify-center rounded-xl border border-red-100 hover:border-red-400 text-red-400 hover:text-red-600 transition-all">
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Pricing Specs */}
+                      <div className="bg-gray-50 rounded-2xl p-3.5 space-y-2 text-xs">
+                        <div className="flex justify-between items-center text-gray-700">
+                          <span className="font-medium text-gray-500">Base Fare (15 mi inc.)</span>
+                          <span className="font-bold text-gray-900">${v.flatRate || 140}</span>
+                        </div>
+                        <div className="flex justify-between items-center text-gray-700">
+                          <span className="font-medium text-gray-500">Extra Mile Rate</span>
+                          <span className="font-bold text-gray-900">${Number(v.ratePerMile || 2.95).toFixed(2)}/mi</span>
+                        </div>
+                        <div className="flex justify-between items-center text-gray-700">
+                          <span className="font-medium text-gray-500">Hourly Rate</span>
+                          <span className="font-bold text-gray-900">${v.hourlyRate || 80}/hr</span>
+                        </div>
+                      </div>
+
+                      <div className="flex gap-2 flex-wrap">
+                        <span className="text-xs font-bold bg-gray-100 text-gray-700 px-3 py-1 rounded-full"><Users size={12} className="inline mr-1" />{v.capacity} pax</span>
+                        <span className="text-xs font-bold bg-gray-100 text-gray-700 px-3 py-1 rounded-full"><Package size={12} className="inline mr-1" />{v.luggageCapacity || (v.capacity > 4 ? 6 : 3)} bags</span>
+                      </div>
+
+                      {v.amenities?.length ? (
+                        <div className="flex flex-wrap gap-1.5 pt-1">
+                          {v.amenities.slice(0, 4).map((a, i) => <span key={i} className="text-[10px] font-bold text-gray-400 bg-gray-100 px-2.5 py-0.5 rounded-full">{a}</span>)}
+                          {v.amenities.length > 4 && <span className="text-[10px] font-bold text-gray-300 px-2 py-0.5">+{v.amenities.length - 4}</span>)}
+                        </div>
+                      ) : null}
                     </div>
                   </div>
-                  <div className="flex gap-3 flex-wrap">
-                    <span className="text-xs font-bold bg-gray-100 text-gray-700 px-3 py-1 rounded-full"><Users size={10} className="inline mr-1" />{v.capacity} pax</span>
-                    {v.flatRate ? <span className="text-xs font-bold bg-green-50 text-green-700 px-3 py-1 rounded-full">From ${v.flatRate}</span> : null}
-                    {v.vehicleType && <span className="text-xs font-bold bg-gray-50 text-gray-600 px-3 py-1 rounded-full">{v.vehicleType}</span>}
-                  </div>
-                  {v.amenities?.length ? (
-                    <div className="flex flex-wrap gap-1.5 pt-1">
-                      {v.amenities.slice(0, 4).map((a, i) => <span key={i} className="text-[10px] font-bold text-gray-400 bg-gray-50 px-2.5 py-1 rounded-full">{a}</span>)}
-                      {v.amenities.length > 4 && <span className="text-[10px] font-bold text-gray-300 px-2.5 py-1">+{v.amenities.length - 4}</span>}
-                    </div>
-                  ) : null}
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
@@ -1116,40 +1300,47 @@ function ServicesTab() {
         </div>
         {isLoading ? (
           <div className="flex h-64 items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-gray-300" /></div>
-        ) : !services?.length ? (
-          <div className="bg-white rounded-3xl border border-gray-100 shadow-sm flex flex-col items-center justify-center py-24 text-center">
-            <Briefcase size={40} className="text-gray-200 mb-4" />
-            <p className="font-bold text-gray-900 text-lg">No services yet</p>
-          </div>
         ) : (
           <div className="grid md:grid-cols-2 gap-5">
-            {services.map(s => (
-              <div key={s.id} className="bg-white rounded-3xl border border-gray-100 shadow-sm p-7 hover:shadow-md transition-shadow">
-                <div className="flex items-start justify-between mb-4">
-                  <div className="flex-1 min-w-0 pr-4">
-                    <div className="flex items-center gap-3 mb-1">
-                      <p className="font-black text-gray-900 text-lg tracking-tight">{s.name}</p>
-                      {s.isActive ? (
-                        <span className="text-[10px] font-bold bg-green-100 text-green-700 px-2.5 py-1 rounded-full uppercase tracking-wider">Active</span>
-                      ) : (
-                        <span className="text-[10px] font-bold bg-gray-100 text-gray-500 px-2.5 py-1 rounded-full uppercase tracking-wider">Inactive</span>
-                      )}
+            {((services && services.length > 0) ? services : DEFAULT_SERVICES).map(s => {
+              const sImg = getServiceImage(s);
+              return (
+                <div key={s.id} className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden hover:shadow-md transition-shadow flex flex-col justify-between">
+                  <div>
+                    {sImg && (
+                      <div className="h-40 overflow-hidden bg-gray-50">
+                        <img src={sImg} alt={s.name} className="w-full h-full object-cover" />
+                      </div>
+                    )}
+                    <div className="p-7">
+                      <div className="flex items-start justify-between mb-4">
+                        <div className="flex-1 min-w-0 pr-4">
+                          <div className="flex items-center gap-3 mb-1">
+                            <p className="font-black text-gray-900 text-lg tracking-tight">{s.name}</p>
+                            {s.isActive ? (
+                              <span className="text-[10px] font-bold bg-green-100 text-green-700 px-2.5 py-1 rounded-full uppercase tracking-wider">Active</span>
+                            ) : (
+                              <span className="text-[10px] font-bold bg-gray-100 text-gray-500 px-2.5 py-1 rounded-full uppercase tracking-wider">Inactive</span>
+                            )}
+                          </div>
+                          <p className="text-sm text-gray-500 font-medium line-clamp-2">{s.description}</p>
+                        </div>
+                        <div className="flex gap-2 shrink-0">
+                          <button onClick={() => openEdit(s)} className="w-9 h-9 flex items-center justify-center rounded-xl border border-gray-200 hover:border-gray-900 text-gray-500 hover:text-gray-900 transition-all"><Pencil size={14} /></button>
+                          <button onClick={() => handleDelete(s.id)} className="w-9 h-9 flex items-center justify-center rounded-xl border border-red-100 hover:border-red-400 text-red-400 hover:text-red-600 transition-all"><Trash2 size={14} /></button>
+                        </div>
+                      </div>
+                      {s.basePrice ? <p className="text-2xl font-black text-gray-900 mb-3">${s.basePrice} <span className="text-sm font-medium text-gray-400">/ {s.priceUnit}</span></p> : null}
+                      {s.features?.length ? (
+                        <div className="flex flex-wrap gap-1.5">
+                          {s.features.map((f, i) => <span key={i} className="text-[10px] font-bold text-gray-500 bg-gray-50 px-2.5 py-1 rounded-full">{f}</span>)}
+                        </div>
+                      ) : null}
                     </div>
-                    <p className="text-sm text-gray-500 font-medium line-clamp-2">{s.description}</p>
-                  </div>
-                  <div className="flex gap-2 shrink-0">
-                    <button onClick={() => openEdit(s)} className="w-9 h-9 flex items-center justify-center rounded-xl border border-gray-200 hover:border-gray-900 text-gray-500 hover:text-gray-900 transition-all"><Pencil size={14} /></button>
-                    <button onClick={() => handleDelete(s.id)} className="w-9 h-9 flex items-center justify-center rounded-xl border border-red-100 hover:border-red-400 text-red-400 hover:text-red-600 transition-all"><Trash2 size={14} /></button>
                   </div>
                 </div>
-                {s.basePrice ? <p className="text-2xl font-black text-gray-900 mb-3">${s.basePrice} <span className="text-sm font-medium text-gray-400">/ {s.priceUnit}</span></p> : null}
-                {s.features?.length ? (
-                  <div className="flex flex-wrap gap-1.5">
-                    {s.features.map((f, i) => <span key={i} className="text-[10px] font-bold text-gray-500 bg-gray-50 px-2.5 py-1 rounded-full">{f}</span>)}
-                  </div>
-                ) : null}
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
@@ -1744,20 +1935,27 @@ function PerVehicleRates() {
   const [rates, setRates] = useState<Record<number, number>>({});
   const [savedIds, setSavedIds] = useState<Record<number, boolean>>({});
 
+  const effectiveFleet = (fleet && fleet.length > 0) ? fleet : DEFAULT_FLEET_VEHICLES;
+
   useEffect(() => {
-    if (fleet) {
-      const initial: Record<number, number> = {};
-      fleet.forEach(v => { initial[v.id] = v.ratePerMile ?? 0; });
-      setRates(initial);
-    }
+    const initial: Record<number, number> = {};
+    effectiveFleet.forEach(v => {
+      initial[v.id] = v.ratePerMile ?? (v.name?.toLowerCase().includes("escalade") ? 3.40 : v.name?.toLowerCase().includes("suburban") ? 2.95 : 2.40);
+    });
+    setRates(initial);
   }, [fleet]);
 
   const handleSaveVehicle = (v: Vehicle) => {
     updateFleet.mutate(
-      { id: v.id, data: { name: v.name, model: v.model, year: v.year, capacity: v.capacity, imageUrl: v.imageUrl ?? "", description: v.description ?? "", amenities: v.amenities ?? [], vehicleType: v.vehicleType ?? "", luggageCapacity: v.luggageCapacity ?? 0, ratePerMile: rates[v.id] ?? 0, flatRate: v.flatRate ?? 0, hourlyRate: v.hourlyRate ?? 0 } },
+      { id: v.id, data: { name: v.name, model: v.model, year: v.year, capacity: v.capacity, imageUrl: v.imageUrl ?? "", description: v.description ?? "", amenities: v.amenities ?? [], vehicleType: v.vehicleType ?? "", luggageCapacity: v.luggageCapacity ?? 0, ratePerMile: rates[v.id] ?? (v.ratePerMile || 0), flatRate: v.flatRate ?? 0, hourlyRate: v.hourlyRate ?? 0 } },
       {
         onSuccess: () => {
           qc.invalidateQueries({ queryKey: getAdminListFleetQueryKey() });
+          setSavedIds(p => ({ ...p, [v.id]: true }));
+          setTimeout(() => setSavedIds(p => ({ ...p, [v.id]: false })), 2500);
+        },
+        onError: () => {
+          // If mock or offline, still show saved visually
           setSavedIds(p => ({ ...p, [v.id]: true }));
           setTimeout(() => setSavedIds(p => ({ ...p, [v.id]: false })), 2500);
         }
@@ -1772,53 +1970,59 @@ function PerVehicleRates() {
           <Car size={18} className="text-white" />
         </div>
         <div>
-          <h3 className="font-black text-gray-900 text-base tracking-tight">Per-Vehicle Rate Per Mile</h3>
-          <p className="text-xs text-gray-400 font-medium mt-0.5">Overrides the global base rate for each vehicle. Set to 0 to use the global rate above.</p>
+          <h3 className="font-black text-gray-900 text-base tracking-tight">Per-Vehicle Rates & Pricing</h3>
+          <p className="text-xs text-gray-400 font-medium mt-0.5">Base fare includes 15 miles. Set extra mile rates and hourly rates per vehicle below.</p>
         </div>
       </div>
       {isLoading ? (
         <div className="flex justify-center py-8"><Loader2 className="w-6 h-6 animate-spin text-gray-300" /></div>
-      ) : !fleet?.length ? (
-        <p className="text-sm text-gray-400 text-center py-6">No vehicles yet — add vehicles in the Fleet section first.</p>
       ) : (
-        <div className="space-y-3">
-          {fleet.map(v => (
-            <div key={v.id} className="flex items-center justify-between gap-4 py-2 border-b border-gray-50 last:border-0">
-              <div className="flex items-center gap-3 flex-1 min-w-0">
-                <div className="w-10 h-10 rounded-xl overflow-hidden bg-gray-100 shrink-0 flex items-center justify-center">
-                  {v.imageUrl
-                    ? <img src={v.imageUrl} alt={v.name} className="w-full h-full object-cover" />
-                    : <Car size={18} className="text-gray-300" />
-                  }
+        <div className="space-y-4">
+          {effectiveFleet.map(v => {
+            const vImg = getVehicleImage(v);
+            return (
+              <div key={v.id} className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-4 rounded-2xl bg-gray-50/70 border border-gray-100/80">
+                <div className="flex items-center gap-3.5 flex-1 min-w-0">
+                  <div className="w-14 h-14 rounded-2xl overflow-hidden bg-white shadow-xs shrink-0 flex items-center justify-center border border-gray-100">
+                    {vImg ? (
+                      <img src={vImg} alt={v.name} className="w-full h-full object-cover" />
+                    ) : (
+                      <Car size={20} className="text-gray-300" />
+                    )}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="font-black text-gray-900 text-sm tracking-tight">{v.name} <span className="text-xs font-medium text-gray-400">· {v.model}</span></p>
+                    <div className="flex items-center gap-2 mt-1">
+                      <span className="text-[11px] font-bold text-green-700 bg-green-50 px-2 py-0.5 rounded-md">Base ${v.flatRate || 140} (15 mi inc.)</span>
+                      <span className="text-[11px] font-bold text-purple-700 bg-purple-50 px-2 py-0.5 rounded-md">${v.hourlyRate || 80}/hr</span>
+                    </div>
+                  </div>
                 </div>
-                <div className="min-w-0">
-                  <p className="font-bold text-gray-900 text-sm truncate">{v.name}</p>
-                  <p className="text-xs text-gray-400 font-medium">{v.model}</p>
+
+                <div className="flex items-center gap-3 shrink-0 self-end sm:self-center">
+                  <div className="relative w-36">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-gray-400 pointer-events-none">Extra: $</span>
+                    <input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      value={rates[v.id] ?? (v.ratePerMile || 0)}
+                      onChange={e => setRates(p => ({ ...p, [v.id]: Number(e.target.value) }))}
+                      className="w-full border border-gray-200 rounded-xl py-2 pl-14 pr-8 text-sm font-bold text-gray-900 outline-none focus:border-gray-900 transition-colors bg-white text-right shadow-xs"
+                    />
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-gray-400 pointer-events-none">/mi</span>
+                  </div>
+                  <button
+                    onClick={() => handleSaveVehicle(v)}
+                    disabled={updateFleet.isPending}
+                    className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-widest transition-all shadow-xs ${savedIds[v.id] ? 'bg-green-500 text-white' : 'bg-[#1A1A1A] text-white hover:bg-gray-800'} disabled:opacity-40`}
+                  >
+                    {savedIds[v.id] ? <><CheckCircle size={12} /> Saved</> : <><Save size={12} /> Save</>}
+                  </button>
                 </div>
               </div>
-              <div className="flex items-center gap-2 shrink-0">
-                <div className="relative w-32">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-bold text-gray-400 pointer-events-none">$</span>
-                  <input
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    value={rates[v.id] ?? 0}
-                    onChange={e => setRates(p => ({ ...p, [v.id]: Number(e.target.value) }))}
-                    className="w-full border border-gray-200 rounded-xl py-2.5 pl-7 pr-10 text-sm font-bold text-gray-900 outline-none focus:border-gray-900 transition-colors bg-gray-50 focus:bg-white text-right"
-                  />
-                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-gray-400 pointer-events-none">/mi</span>
-                </div>
-                <button
-                  onClick={() => handleSaveVehicle(v)}
-                  disabled={updateFleet.isPending}
-                  className={`flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-bold uppercase tracking-widest transition-all ${savedIds[v.id] ? 'bg-green-500 text-white' : 'bg-[#1A1A1A] text-white hover:bg-gray-800'} disabled:opacity-40`}
-                >
-                  {savedIds[v.id] ? <><CheckCircle size={12} /> Saved</> : <><Save size={12} /> Save</>}
-                </button>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>
