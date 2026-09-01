@@ -1204,12 +1204,13 @@ function FleetTab() {
                         <span className="text-xs font-bold bg-gray-100 text-gray-700 px-3 py-1 rounded-full"><Package size={12} className="inline mr-1" />{v.luggageCapacity || (v.capacity > 4 ? 6 : 3)} bags</span>
                       </div>
 
-                      {v.amenities?.length ? (
+                      {Array.isArray(v.amenities) && v.amenities.length > 0 && (
                         <div className="flex flex-wrap gap-1.5 pt-1">
-                          {v.amenities.slice(0, 4).map((a, i) => <span key={i} className="text-[10px] font-bold text-gray-400 bg-gray-100 px-2.5 py-0.5 rounded-full">{a}</span>)}
-                          {v.amenities.length > 4 && <span className="text-[10px] font-bold text-gray-300 px-2 py-0.5">+{v.amenities.length - 4}</span>)}
+                          {v.amenities.slice(0, 4).map((a, i) => (
+                            <span key={i} className="text-[10px] font-bold text-gray-400 bg-gray-100 px-2.5 py-0.5 rounded-full">{a}</span>
+                          ))}
                         </div>
-                      ) : null}
+                      )}
                     </div>
                   </div>
                 </div>
