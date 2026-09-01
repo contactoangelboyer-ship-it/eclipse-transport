@@ -909,7 +909,6 @@ function BookingsTab() {
                 <Field label="Passengers"><input type="number" className={inputClass} value={bf.passengers} onChange={setB("passengers")} min={1} max={20} /></Field>
                 <Field label="Special Requests / Notes"><textarea className={textareaClass} value={bf.specialRequests ?? ""} onChange={setB("specialRequests")} rows={3} placeholder="Notes, flight details, or add-ons..." /></Field>
               </div>
-            </div>
             <div className="flex gap-3 pt-2">
               <button onClick={() => setManualModal(false)} className="flex-1 py-4 border border-gray-200 text-gray-600 font-bold text-sm tracking-widest uppercase rounded-2xl hover:bg-gray-50 transition-all">Cancel</button>
               <button onClick={handleCreateBooking} disabled={createBooking.isPending || !bf.passengerName || !bf.pickupLocation} className="flex-1 py-4 bg-[#1A1A1A] text-white font-bold text-sm tracking-widest uppercase rounded-2xl hover:bg-gray-800 transition-all disabled:opacity-30 shadow-md flex items-center justify-center gap-2">
