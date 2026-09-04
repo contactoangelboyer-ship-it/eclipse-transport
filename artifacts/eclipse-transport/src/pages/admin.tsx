@@ -53,7 +53,7 @@ import {
   AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell,
   XAxis, YAxis, Tooltip, ResponsiveContainer, Legend, CartesianGrid
 } from "recharts";
-import type { Booking, Vehicle, Service, Zone, BookingInput } from "@workspace/api-client-react";
+import type { Booking, Vehicle, Service, Zone, BookingInput, ContactInquiry, BookingUpdateStatus } from "@workspace/api-client-react";
 
 /* ── Real-time polling ──
    New reservations appear in the panel without a manual refresh.
@@ -149,7 +149,6 @@ export const DEFAULT_FLEET_VEHICLES: Vehicle[] = [
     imageUrl: suburbanImg,
     description: "The pinnacle of understated luxury. Exceptionally spacious with onboard Wi-Fi, privacy glass, and capacity for 7 passengers and 6 large bags.",
     amenities: ["Wi-Fi", "Privacy glass", "Leather seating", "USB charging", "Climate control"],
-    createdAt: new Date().toISOString(),
   },
   {
     id: 2,
@@ -165,7 +164,6 @@ export const DEFAULT_FLEET_VEHICLES: Vehicle[] = [
     imageUrl: escaladeImg,
     description: "Commanding presence with panoramic sunroof, studio sound system, executive captain seating, and maximum legroom for high-profile clients.",
     amenities: ["Panoramic sunroof", "Studio audio", "Wi-Fi", "Executive seating", "Rear entertainment"],
-    createdAt: new Date().toISOString(),
   },
   {
     id: 3,
@@ -181,7 +179,6 @@ export const DEFAULT_FLEET_VEHICLES: Vehicle[] = [
     imageUrl: lincolnImg,
     description: "Classic executive elegance. Whisper-quiet cabin, massaging rear seats, and smooth ride perfect for airport and corporate transfers.",
     amenities: ["Executive seating", "Massaging seats", "Quiet cabin", "Wi-Fi", "USB charging"],
-    createdAt: new Date().toISOString(),
   },
   {
     id: 4,
@@ -197,7 +194,6 @@ export const DEFAULT_FLEET_VEHICLES: Vehicle[] = [
     imageUrl: mercedesImg,
     description: "The ultimate standard in luxury sedans. State-of-the-art safety, exquisite craftsmanship, and an extraordinarily smooth ride.",
     amenities: ["Ambient lighting", "Massaging seats", "Burmester audio", "Rear screens", "Wi-Fi"],
-    createdAt: new Date().toISOString(),
   }
 ];
 
@@ -227,45 +223,33 @@ export const DEFAULT_SERVICES: Service[] = [
     id: 1,
     name: "Airport Transfer",
     description: "Seamless door-to-terminal luxury service with real-time flight tracking and meet & greet at LAX, BUR, LGB, SNA & ONT.",
-    basePrice: 100,
-    priceUnit: "flat",
-    imageUrl: serviceAirport,
-    isActive: true,
+    icon: "airport",
+    priceFrom: 100,
     features: ["Flight Tracking", "Meet & Greet Available", "Luggage Assistance", "Curbside or Inside Pickup"],
-    createdAt: new Date().toISOString(),
   },
   {
     id: 2,
     name: "Corporate Travel",
     description: "Dedicated executive transportation with onboard Wi-Fi, discreet professional chauffeurs, and punctual service guaranteed.",
-    basePrice: 75,
-    priceUnit: "hour",
-    imageUrl: serviceCorporate,
-    isActive: true,
+    icon: "corporate",
+    priceFrom: 75,
     features: ["High-speed Wi-Fi", "Mobile Office Setup", "Flexible Billing", "Priority Dispatch"],
-    createdAt: new Date().toISOString(),
   },
   {
     id: 3,
     name: "By the Hour",
     description: "As-directed luxury chauffeur service with unlimited stops across Los Angeles. 3-hour minimum.",
-    basePrice: 75,
-    priceUnit: "hour",
-    imageUrl: "",
-    isActive: true,
+    icon: "hourly",
+    priceFrom: 75,
     features: ["Unlimited Stops", "Wait & Return", "Custom Itinerary", "Chauffeur on Standby"],
-    createdAt: new Date().toISOString(),
   },
   {
     id: 4,
     name: "Special Events & Weddings",
     description: "Prestigious black car arrivals for weddings, red carpets, galas, and VIP celebrations.",
-    basePrice: 140,
-    priceUnit: "flat",
-    imageUrl: "",
-    isActive: true,
+    icon: "wedding",
+    priceFrom: 140,
     features: ["Red Carpet Ready", "Bridal Fleet", "Champagne Service Ready", "Impeccable Timing"],
-    createdAt: new Date().toISOString(),
   }
 ];
 
@@ -436,7 +420,7 @@ function PrintInvoice({ booking }: { booking: Booking }) {
 function DashboardTab({ onGoTo }: { onGoTo: (tab: string) => void }) {
   const { data: analytics, isLoading } = useAdminGetAnalytics({ query: { queryKey: getAdminGetAnalyticsQueryKey(), ...REALTIME_QUERY } });
   const { data: summary } = useGetBookingSummary({ query: { queryKey: getGetBookingSummaryQueryKey(), ...REALTIME_QUERY } });
-  const { data: allBookings } = useListBookings({ query: { queryKey: getListBookingsQueryKey(), ...REALTIME_QUERY } });
+  const { data: allBookings } = useListBookings({}, { query: { queryKey: getListBookingsQueryKey(), ...REALTIME_QUERY } });
 
   const pendingCount = allBookings?.filter(b => b.status === 'pending').length ?? 0;
   const confirmedCount = allBookings?.filter(b => b.status === 'confirmed').length ?? 0;
@@ -621,7 +605,7 @@ function BookingsTab() {
   const emptyForm: BookingInput = {
     passengerName: "", passengerPhone: "", passengerEmail: "",
     pickupLocation: "", dropoffLocation: "", serviceType: "",
-    pickupDate: "", pickupTime: "", passengers: 1, vehicleId: 0,
+    pickupDate: "", pickupTime: "", passengers: 1, vehicleType: "",
     specialRequests: "",
   };
   const [bf, setBf] = useState<BookingInput>(emptyForm);
@@ -664,7 +648,7 @@ function BookingsTab() {
         }
       });
     } else {
-      updateBooking.mutate({ id: detailBooking.id, data: { status } }, {
+      updateBooking.mutate({ id: detailBooking.id, data: { status: status as BookingUpdateStatus } }, {
         onSuccess: () => {
           qc.invalidateQueries({ queryKey: getListBookingsQueryKey() });
           qc.invalidateQueries({ queryKey: getGetBookingQueryKey(detailBooking.id) });
@@ -946,20 +930,20 @@ function BookingsTab() {
                     </select>
                   </Field>
                   <Field label="Vehicle">
-                    <select className={inputClass} value={bf.vehicleId || ""} onChange={e => {
-                      const vId = Number(e.target.value);
-                      const selV = DEFAULT_FLEET_VEHICLES.find(v => v.id === vId);
+                    <select className={inputClass} value={bf.vehicleType || ""} onChange={e => {
+                      const vName = e.target.value;
+                      const selV = DEFAULT_FLEET_VEHICLES.find(v => v.name === vName);
                       setBf(prev => ({
                         ...prev,
-                        vehicleId: vId,
+                        vehicleType: vName,
                         estimatedPrice: prev.estimatedPrice || (selV ? selV.flatRate : 140)
                       }));
                     }}>
                       <option value="">Select vehicle...</option>
-                      <option value="1">Suburban ($140 base · $2.95/mi · $80/hr)</option>
-                      <option value="2">Escalade ($140 base · $3.40/mi · $95/hr)</option>
-                      <option value="3">Sedan / Lincoln ($100 base · $2.40/mi · $75/hr)</option>
-                      <option value="4">Mercedes S-Class ($100 base · $2.40/mi · $75/hr)</option>
+                      <option value="Suburban">Suburban ($140 base · $2.95/mi · $80/hr)</option>
+                      <option value="Escalade">Escalade ($140 base · $3.40/mi · $95/hr)</option>
+                      <option value="Sedan">Sedan / Lincoln ($100 base · $2.40/mi · $75/hr)</option>
+                      <option value="Mercedes S-Class">Mercedes S-Class ($100 base · $2.40/mi · $75/hr)</option>
                     </select>
                   </Field>
                 </div>
@@ -1325,7 +1309,7 @@ function ServicesTab() {
   const updateSvc = useAdminUpdateService();
   const deleteSvc = useAdminDeleteService();
 
-  const emptyS = { name: "", description: "", basePrice: 0, priceUnit: "flat", imageUrl: "", isActive: true, features: [] as string[] };
+  const emptyS = { name: "", description: "", icon: "", priceFrom: 0, features: [] as string[] };
   const [modal, setModal] = useState<null | 'create' | 'edit'>(null);
   const [form, setForm] = useState(emptyS);
   const [editId, setEditId] = useState<number | null>(null);
@@ -1335,14 +1319,14 @@ function ServicesTab() {
 
   const openCreate = () => { setForm(emptyS); setFeaturesInput(""); setModal('create'); };
   const openEdit = (s: Service) => {
-    setForm({ name: s.name, description: s.description ?? "", basePrice: s.basePrice ?? 0, priceUnit: s.priceUnit ?? "flat", imageUrl: s.imageUrl ?? "", isActive: s.isActive ?? true, features: s.features ?? [] });
+    setForm({ name: s.name, description: s.description ?? "", icon: s.icon ?? "", priceFrom: s.priceFrom ?? 0, features: s.features ?? [] });
     setFeaturesInput((s.features ?? []).join(", "));
     setEditId(s.id);
     setModal('edit');
   };
   const handleSave = () => {
     const features = featuresInput.split(",").map(s => s.trim()).filter(Boolean);
-    const payload = { ...form, features, basePrice: Number(form.basePrice) };
+    const payload = { ...form, features, priceFrom: Number(form.priceFrom) };
     if (modal === 'create') {
       createSvc.mutate({ data: payload }, { onSuccess: () => { qc.invalidateQueries({ queryKey: getAdminListServicesQueryKey() }); setModal(null); } });
     } else if (editId != null) {
@@ -1381,11 +1365,6 @@ function ServicesTab() {
                         <div className="flex-1 min-w-0 pr-4">
                           <div className="flex items-center gap-3 mb-1">
                             <p className="font-black text-gray-900 text-lg tracking-tight">{s.name}</p>
-                            {s.isActive ? (
-                              <span className="text-[10px] font-bold bg-green-100 text-green-700 px-2.5 py-1 rounded-full uppercase tracking-wider">Active</span>
-                            ) : (
-                              <span className="text-[10px] font-bold bg-gray-100 text-gray-500 px-2.5 py-1 rounded-full uppercase tracking-wider">Inactive</span>
-                            )}
                           </div>
                           <p className="text-sm text-gray-500 font-medium line-clamp-2">{s.description}</p>
                         </div>
@@ -1394,7 +1373,7 @@ function ServicesTab() {
                           <button onClick={() => handleDelete(s.id)} className="w-9 h-9 flex items-center justify-center rounded-xl border border-red-100 hover:border-red-400 text-red-400 hover:text-red-600 transition-all"><Trash2 size={14} /></button>
                         </div>
                       </div>
-                      {s.basePrice ? <p className="text-2xl font-black text-gray-900 mb-3">${s.basePrice} <span className="text-sm font-medium text-gray-400">/ {s.priceUnit}</span></p> : null}
+                      {s.priceFrom ? <p className="text-2xl font-black text-gray-900 mb-3"><span className="text-sm font-medium text-gray-400">from </span>${s.priceFrom}</p> : null}
                       {s.features?.length ? (
                         <div className="flex flex-wrap gap-1.5">
                           {s.features.map((f, i) => <span key={i} className="text-[10px] font-bold text-gray-500 bg-gray-50 px-2.5 py-1 rounded-full">{f}</span>)}
@@ -1413,23 +1392,24 @@ function ServicesTab() {
           <div className="space-y-5">
             <Field label="Service Name"><input className={inputClass} value={form.name} onChange={setF("name")} placeholder="Airport Transfer" /></Field>
             <div className="grid grid-cols-2 gap-5">
-              <Field label="Base Price ($)"><input type="number" className={inputClass} value={form.basePrice} onChange={setF("basePrice")} /></Field>
-              <Field label="Price Unit">
-                <select className={inputClass} value={form.priceUnit} onChange={setF("priceUnit")}>
-                  <option value="flat">Flat Rate</option>
-                  <option value="hour">Per Hour</option>
-                  <option value="mile">Per Mile</option>
-                  <option value="day">Per Day</option>
+              <Field label="Price From ($)"><input type="number" className={inputClass} value={form.priceFrom} onChange={setF("priceFrom")} /></Field>
+              <Field label="Icon">
+                <select className={inputClass} value={form.icon} onChange={setF("icon")}>
+                  <option value="airport">Airport</option>
+                  <option value="corporate">Corporate</option>
+                  <option value="hourly">By the Hour</option>
+                  <option value="wedding">Wedding &amp; Events</option>
+                  <option value="date">Date Night</option>
+                  <option value="prom">Prom</option>
+                  <option value="concert">Concert</option>
+                  <option value="sports">Sports</option>
+                  <option value="point">Point-to-Point</option>
+                  <option value="air">Private Aviation</option>
                 </select>
               </Field>
             </div>
-            <Field label="Image URL"><input className={inputClass} value={form.imageUrl} onChange={setF("imageUrl")} placeholder="https://..." /></Field>
             <Field label="Features (comma separated)"><input className={inputClass} value={featuresInput} onChange={e => setFeaturesInput(e.target.value)} placeholder="Meet & Greet, Flight Tracking..." /></Field>
             <Field label="Description"><textarea className={textareaClass} value={form.description} onChange={setF("description")} rows={3} placeholder="Describe this service..." /></Field>
-            <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-2xl">
-              <input type="checkbox" id="isActive" checked={form.isActive} onChange={e => setForm(p => ({ ...p, isActive: e.target.checked }))} className="w-4 h-4 rounded" />
-              <label htmlFor="isActive" className="text-sm font-semibold text-gray-700">Active (visible on website)</label>
-            </div>
             <div className="flex gap-3 pt-2">
               <button onClick={() => setModal(null)} className="flex-1 py-3.5 border border-gray-200 text-gray-600 font-bold text-sm tracking-widest uppercase rounded-2xl hover:bg-gray-50 transition-all">Cancel</button>
               <button onClick={handleSave} disabled={createSvc.isPending || updateSvc.isPending || !form.name} className="flex-1 py-3.5 bg-[#1A1A1A] text-white font-bold text-sm tracking-widest uppercase rounded-2xl hover:bg-gray-800 transition-all disabled:opacity-30 flex items-center justify-center gap-2">
@@ -1454,7 +1434,7 @@ function ZonesTab() {
   const updateZone = useAdminUpdateZone();
   const deleteZone = useAdminDeleteZone();
 
-  const emptyZ = { name: "", description: "", baseRate: 0, additionalMileRate: 0, isActive: true };
+  const emptyZ = { name: "", description: "", surcharge: 0, active: true };
   const [modal, setModal] = useState<null | 'create' | 'edit'>(null);
   const [form, setForm] = useState(emptyZ);
   const [editId, setEditId] = useState<number | null>(null);
@@ -1462,11 +1442,11 @@ function ZonesTab() {
     setForm(prev => ({ ...prev, [key]: e.target.value }));
   const openCreate = () => { setForm(emptyZ); setModal('create'); };
   const openEdit = (z: Zone) => {
-    setForm({ name: z.name, description: z.description ?? "", baseRate: z.baseRate ?? 0, additionalMileRate: z.additionalMileRate ?? 0, isActive: z.isActive ?? true });
+    setForm({ name: z.name, description: z.description ?? "", surcharge: z.surcharge ?? 0, active: z.active ?? true });
     setEditId(z.id); setModal('edit');
   };
   const handleSave = () => {
-    const payload = { ...form, baseRate: Number(form.baseRate), additionalMileRate: Number(form.additionalMileRate) };
+    const payload = { ...form, surcharge: Number(form.surcharge) };
     if (modal === 'create') {
       createZone.mutate({ data: payload }, { onSuccess: () => { qc.invalidateQueries({ queryKey: getAdminListZonesQueryKey() }); setModal(null); } });
     } else if (editId != null) {
@@ -1498,7 +1478,7 @@ function ZonesTab() {
             <table className="w-full text-sm">
               <thead className="bg-gray-50/50">
                 <tr>
-                  {["Zone", "Base Rate", "Per Mile", "Status", "Actions"].map(h => (
+                  {["Zone", "Surcharge", "Status", "Actions"].map(h => (
                     <th key={h} className="text-left px-8 py-5 text-[10px] font-bold uppercase tracking-widest text-gray-400">{h}</th>
                   ))}
                 </tr>
@@ -1510,10 +1490,9 @@ function ZonesTab() {
                       <p className="font-bold text-gray-900">{z.name}</p>
                       {z.description && <p className="text-xs text-gray-500 font-medium mt-0.5">{z.description}</p>}
                     </td>
-                    <td className="px-8 py-5 font-black text-gray-900">${z.baseRate ?? 0}</td>
-                    <td className="px-8 py-5 font-semibold text-gray-600">${z.additionalMileRate ?? 0}</td>
+                    <td className="px-8 py-5 font-black text-gray-900">${z.surcharge ?? 0}</td>
                     <td className="px-8 py-5">
-                      {z.isActive ? <span className="text-[10px] font-bold bg-green-100 text-green-700 px-2.5 py-1 rounded-full uppercase tracking-wider">Active</span> : <span className="text-[10px] font-bold bg-gray-100 text-gray-500 px-2.5 py-1 rounded-full uppercase tracking-wider">Inactive</span>}
+                      {z.active ? <span className="text-[10px] font-bold bg-green-100 text-green-700 px-2.5 py-1 rounded-full uppercase tracking-wider">Active</span> : <span className="text-[10px] font-bold bg-gray-100 text-gray-500 px-2.5 py-1 rounded-full uppercase tracking-wider">Inactive</span>}
                     </td>
                     <td className="px-8 py-5">
                       <div className="flex gap-2">
@@ -1532,13 +1511,10 @@ function ZonesTab() {
         <Modal title={modal === 'create' ? 'Add Zone' : 'Edit Zone'} onClose={() => setModal(null)}>
           <div className="space-y-5">
             <Field label="Zone Name"><input className={inputClass} value={form.name} onChange={setF("name")} placeholder="Downtown LA, Beverly Hills..." /></Field>
-            <div className="grid grid-cols-2 gap-5">
-              <Field label="Base Rate ($)"><input type="number" className={inputClass} value={form.baseRate} onChange={setF("baseRate")} /></Field>
-              <Field label="Additional Mile ($)"><input type="number" className={inputClass} value={form.additionalMileRate} onChange={setF("additionalMileRate")} /></Field>
-            </div>
+            <Field label="Surcharge ($)"><input type="number" className={inputClass} value={form.surcharge} onChange={setF("surcharge")} /></Field>
             <Field label="Description"><textarea className={textareaClass} value={form.description} onChange={setF("description")} rows={3} placeholder="Zone description..." /></Field>
             <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-2xl">
-              <input type="checkbox" id="zIsActive" checked={form.isActive} onChange={e => setForm(p => ({ ...p, isActive: e.target.checked }))} className="w-4 h-4 rounded" />
+              <input type="checkbox" id="zIsActive" checked={form.active} onChange={e => setForm(p => ({ ...p, active: e.target.checked }))} className="w-4 h-4 rounded" />
               <label htmlFor="zIsActive" className="text-sm font-semibold text-gray-700">Active</label>
             </div>
             <div className="flex gap-3 pt-2">
@@ -1561,7 +1537,7 @@ function ZonesTab() {
 function ContactsTab() {
   const { data: contacts, isLoading } = useAdminListContacts({ query: { queryKey: getAdminListContactsQueryKey() } });
   const [search, setSearch] = useState("");
-  const [selected, setSelected] = useState<typeof contacts extends (infer T)[] | undefined ? T : never | null>(null);
+  const [selected, setSelected] = useState<ContactInquiry | null>(null);
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase();
