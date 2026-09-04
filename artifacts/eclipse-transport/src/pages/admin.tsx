@@ -182,8 +182,45 @@ export const DEFAULT_FLEET_VEHICLES: Vehicle[] = [
     description: "Classic executive elegance. Whisper-quiet cabin, massaging rear seats, and smooth ride perfect for airport and corporate transfers.",
     amenities: ["Executive seating", "Massaging seats", "Quiet cabin", "Wi-Fi", "USB charging"],
     createdAt: new Date().toISOString(),
+  },
+  {
+    id: 4,
+    name: "Mercedes S-Class",
+    model: "Mercedes-Benz S-Class",
+    year: 2024,
+    capacity: 3,
+    luggageCapacity: 3,
+    vehicleType: "Luxury Sedan",
+    flatRate: 100,
+    ratePerMile: 2.40,
+    hourlyRate: 75,
+    imageUrl: mercedesImg,
+    description: "The ultimate standard in luxury sedans. State-of-the-art safety, exquisite craftsmanship, and an extraordinarily smooth ride.",
+    amenities: ["Ambient lighting", "Massaging seats", "Burmester audio", "Rear screens", "Wi-Fi"],
+    createdAt: new Date().toISOString(),
   }
 ];
+
+/** Returns the correct catalog rate for a vehicle based on its name. */
+function defaultRateFor(name: string | undefined, field: "ratePerMile" | "flatRate" | "hourlyRate"): number {
+  const lower = (name || "").toLowerCase();
+  const isSuv = lower.includes("suburban") || lower.includes("escalade");
+  const isSedan = lower.includes("lincoln") || lower.includes("sedan") || lower.includes("mercedes");
+  switch (field) {
+    case "ratePerMile":
+      if (lower.includes("escalade")) return 3.40;
+      if (lower.includes("suburban")) return 2.95;
+      if (isSedan) return 2.40;
+      return 2.95;
+    case "flatRate":
+      return isSuv ? 140 : isSedan ? 100 : 140;
+    case "hourlyRate":
+      if (lower.includes("escalade")) return 95;
+      if (lower.includes("suburban")) return 80;
+      if (isSedan) return 75;
+      return 80;
+  }
+}
 
 export const DEFAULT_SERVICES: Service[] = [
   {
@@ -921,7 +958,8 @@ function BookingsTab() {
                       <option value="">Select vehicle...</option>
                       <option value="1">Suburban ($140 base · $2.95/mi · $80/hr)</option>
                       <option value="2">Escalade ($140 base · $3.40/mi · $95/hr)</option>
-                      <option value="3">Sedan ($100 base · $2.40/mi · $75/hr)</option>
+                      <option value="3">Sedan / Lincoln ($100 base · $2.40/mi · $75/hr)</option>
+                      <option value="4">Mercedes S-Class ($100 base · $2.40/mi · $75/hr)</option>
                     </select>
                   </Field>
                 </div>
@@ -1213,15 +1251,15 @@ function FleetTab() {
                       <div className="bg-gray-50 rounded-2xl p-3.5 space-y-2 text-xs">
                         <div className="flex justify-between items-center text-gray-700">
                           <span className="font-medium text-gray-500">Base Fare (15 mi inc.)</span>
-                          <span className="font-bold text-gray-900">${v.flatRate || 140}</span>
+                          <span className="font-bold text-gray-900">${Number(v.flatRate || defaultRateFor(v.name, "flatRate"))}</span>
                         </div>
                         <div className="flex justify-between items-center text-gray-700">
                           <span className="font-medium text-gray-500">Extra Mile Rate</span>
-                          <span className="font-bold text-gray-900">${Number(v.ratePerMile || 2.95).toFixed(2)}/mi</span>
+                          <span className="font-bold text-gray-900">${Number(v.ratePerMile || defaultRateFor(v.name, "ratePerMile")).toFixed(2)}/mi</span>
                         </div>
                         <div className="flex justify-between items-center text-gray-700">
                           <span className="font-medium text-gray-500">Hourly Rate</span>
-                          <span className="font-bold text-gray-900">${v.hourlyRate || 80}/hr</span>
+                          <span className="font-bold text-gray-900">${Number(v.hourlyRate || defaultRateFor(v.name, "hourlyRate"))}/hr</span>
                         </div>
                       </div>
 
@@ -1966,7 +2004,7 @@ function PerVehicleRates() {
   useEffect(() => {
     const initial: Record<number, number> = {};
     effectiveFleet.forEach(v => {
-      initial[v.id] = v.ratePerMile ?? (v.name?.toLowerCase().includes("escalade") ? 3.40 : v.name?.toLowerCase().includes("suburban") ? 2.95 : 2.40);
+      initial[v.id] = v.ratePerMile || defaultRateFor(v.name, "ratePerMile");
     });
     setRates(initial);
   }, [fleet]);

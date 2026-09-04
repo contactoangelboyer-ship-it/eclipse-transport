@@ -130,12 +130,36 @@ async function initializeDatabase(): Promise<void> {
   await pool.query(`
     INSERT INTO fleet (name, model, year, capacity, image_url, description, amenities, vehicle_type, luggage_capacity, rate_per_mile, flat_rate, hourly_rate)
     SELECT * FROM (VALUES
-      ('Chevrolet Suburban', '2025 Suburban S', 2025, 7, '/assets/fleet-suburban.jpg', 'Spacious luxury SUV for groups and airport transfers.', ARRAY['Wi-Fi', 'Privacy glass', 'Climate control']::TEXT[], 'SUV', 6, 6.2::REAL, 0::REAL, 80::REAL),
-      ('Cadillac Escalade ESV', '2024 Escalade ESV', 2024, 7, '/assets/fleet-escalade.jpg', 'Premium SUV with generous space and a refined cabin.', ARRAY['Panoramic sunroof', 'Premium audio', 'Heated seats']::TEXT[], 'SUV', 6, 7.15::REAL, 0::REAL, 95::REAL),
-      ('Lincoln Continental', '2024 Continental', 2024, 3, '/assets/fleet-lincoln.jpg', 'Executive sedan for discreet and comfortable travel.', ARRAY['Executive rear seating', 'Noise cancellation']::TEXT[], 'Sedan', 3, 5.6::REAL, 0::REAL, 65::REAL),
-      ('Mercedes-Benz S-Class', '2024 S-Class', 2024, 3, '/assets/fleet-mercedes.jpg', 'Flagship sedan with a smooth, private ride.', ARRAY['Ambient lighting', 'Massaging seats', 'Burmester audio']::TEXT[], 'Sedan', 3, 5.6::REAL, 0::REAL, 75::REAL)
+      ('Suburban', 'Chevrolet Suburban', 2025, 7, '/assets/fleet-suburban.jpg', 'The pinnacle of understated luxury. Exceptionally spacious with onboard Wi-Fi, privacy glass, and capacity for 7 passengers and 6 large bags.', ARRAY['Wi-Fi', 'Privacy glass', 'Leather seating', 'USB charging', 'Climate control']::TEXT[], 'SUV', 6, 2.95::REAL, 140::REAL, 80::REAL),
+      ('Escalade', 'Cadillac Escalade ESV', 2024, 7, '/assets/fleet-escalade.jpg', 'Commanding presence with panoramic sunroof, studio sound system, executive captain seating, and maximum legroom for high-profile clients.', ARRAY['Panoramic sunroof', 'Studio audio', 'Wi-Fi', 'Executive seating', 'Rear entertainment']::TEXT[], 'SUV', 6, 3.40::REAL, 140::REAL, 95::REAL),
+      ('Lincoln Continental', 'Lincoln Continental', 2024, 3, '/assets/fleet-lincoln.jpg', 'Classic executive elegance. Whisper-quiet cabin, massaging rear seats, and smooth ride perfect for airport and corporate transfers.', ARRAY['Executive seating', 'Massaging seats', 'Quiet cabin', 'Wi-Fi', 'USB charging']::TEXT[], 'Sedan', 3, 2.40::REAL, 100::REAL, 75::REAL),
+      ('Mercedes S-Class', 'Mercedes-Benz S-Class', 2024, 3, '/assets/fleet-mercedes.jpg', 'The ultimate standard in luxury sedans. State-of-the-art safety, exquisite craftsmanship, and an extraordinarily smooth ride.', ARRAY['Ambient lighting', 'Massaging seats', 'Burmester audio', 'Rear screens', 'Wi-Fi']::TEXT[], 'Sedan', 3, 2.40::REAL, 100::REAL, 75::REAL)
     ) AS seed(name, model, year, capacity, image_url, description, amenities, vehicle_type, luggage_capacity, rate_per_mile, flat_rate, hourly_rate)
     WHERE NOT EXISTS (SELECT 1 FROM fleet)
+  `);
+
+  // ── Self-heal: ensure existing fleet rows have the correct catalog pricing.
+  //    (Earlier seeds / migrations may have left rate_per_mile = 0 or stale values.)
+  await pool.query(`
+    UPDATE fleet SET
+      rate_per_mile = CASE
+        WHEN name ILIKE '%suburban%' THEN 2.95
+        WHEN name ILIKE '%escalade%' THEN 3.40
+        WHEN name ILIKE '%lincoln%' OR name ILIKE '%sedan%' OR name ILIKE '%mercedes%' THEN 2.40
+        ELSE rate_per_mile
+      END,
+      flat_rate = CASE
+        WHEN name ILIKE '%suburban%' OR name ILIKE '%escalade%' THEN 140
+        WHEN name ILIKE '%lincoln%' OR name ILIKE '%sedan%' OR name ILIKE '%mercedes%' THEN 100
+        ELSE flat_rate
+      END,
+      hourly_rate = CASE
+        WHEN name ILIKE '%suburban%' THEN 80
+        WHEN name ILIKE '%escalade%' THEN 95
+        WHEN name ILIKE '%lincoln%' OR name ILIKE '%sedan%' OR name ILIKE '%mercedes%' THEN 75
+        ELSE hourly_rate
+      END
+    WHERE rate_per_mile = 0 OR flat_rate = 0 OR hourly_rate = 0
   `);
 
   await pool.query(`
