@@ -39,8 +39,8 @@ const testimonials = [
     title: "Private Client",
     location: "Malibu",
     quote:
-      "A truly quiet, seamless experience. The S-Class was immaculate and the driver navigated PCH traffic like a ghost. I arrived completely relaxed and ahead of schedule.",
-    vehicle: "Mercedes-Benz S-Class",
+      "A truly quiet, seamless experience. The Escalade was immaculate and the driver navigated PCH traffic like a ghost. I arrived completely relaxed and ahead of schedule.",
+    vehicle: "Cadillac Escalade",
     color: "#1A1A1A",
   },
   {

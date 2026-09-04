@@ -26,51 +26,6 @@ export const BOOKING_VEHICLES = {
     hourlyRate: 75,
     minimumFare: 100, // Base Price (15 miles included)
   },
-  lincoln: {
-    id: "lincoln",
-    label: "Lincoln Continental",
-    baseFare: 100.00,
-    baseMilesLimit: 15,
-    ratePerMile: 2.40,
-    hourlyRate: 75,
-    minimumFare: 100,
-  },
-  mercedes: {
-    id: "mercedes",
-    label: "Mercedes-Benz S-Class",
-    baseFare: 100.00,
-    baseMilesLimit: 15,
-    ratePerMile: 2.40,
-    hourlyRate: 75,
-    minimumFare: 100,
-  },
-  sprinter: {
-    id: "sprinter",
-    label: "Mercedes Sprinter Van",
-    baseFare: 200.00,
-    baseMilesLimit: 15,
-    ratePerMile: 4.50,
-    hourlyRate: 130,
-    minimumFare: 200, // Base Price (15 miles included)
-  },
-  limousine: {
-    id: "limousine",
-    label: "Stretch Limousine",
-    baseFare: 175.00,
-    baseMilesLimit: 15,
-    ratePerMile: 4.00,
-    hourlyRate: 110,
-    minimumFare: 175, // Base Price (15 miles included)
-  },
-  partybus: {
-    id: "partybus",
-    label: "Luxury Party Bus",
-    baseFare: 300.00,
-    baseMilesLimit: 15,
-    ratePerMile: 6.00,
-    hourlyRate: 175,
-    minimumFare: 300, // Base Price (15 miles included)
-  },
 } as const;
 
 export type FleetVehicleId = keyof typeof BOOKING_VEHICLES;

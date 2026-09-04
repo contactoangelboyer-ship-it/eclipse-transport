@@ -181,7 +181,7 @@ export default function Home() {
             <h2 className="text-[10px] font-bold uppercase tracking-[0.25em] text-[#1A1A1A]/40 mb-6">The Fleet</h2>
             <h3 className="text-4xl md:text-5xl font-light mb-8 tracking-tight text-[#1A1A1A] leading-tight">Vehicles chosen for silence, not show.</h3>
             <p className="text-[#1A1A1A]/60 mb-10 max-w-lg leading-relaxed font-light text-lg">
-              Our fleet is curated for comfort and discretion — Chevrolet Suburbans, Cadillac Escalades, Lincoln Continentals, and Mercedes S-Class sedans.
+              Our fleet is curated for comfort and discretion — Chevrolet Suburbans, Cadillac Escalades, and Lincoln Continentals.
             </p>
             <Link href="/fleet" className="inline-flex h-14 w-fit items-center justify-center border border-[#1A1A1A] text-[#1A1A1A] px-10 text-[11px] font-bold uppercase tracking-[0.2em] rounded-full hover:bg-[#1A1A1A] hover:text-white transition-all active:scale-95">
               View Fleet <ArrowRight className="w-4 h-4 ml-3" />

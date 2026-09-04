@@ -11,8 +11,8 @@ const vehicles = VEHICLE_CATALOG;
 export default function Fleet() {
   useSEO({
     title: "Our Fleet — Cadillac Escalade, Chevrolet Suburban & Lincoln Continental",
-    description: "Eclipse Transport's luxury fleet in Los Angeles: Cadillac Escalade, Chevrolet Suburban, Lincoln Continental, Mercedes S-Class, Sprinter Vans, Stretch Limousines & Party Buses. Premium SUVs, sedans, vans & limos for airport transfers, corporate travel, weddings & events.",
-    keywords: "Cadillac Escalade limo Los Angeles, Chevrolet Suburban chauffeur LA, Lincoln Continental car service, Mercedes S-Class limo LA, luxury SUV car service Los Angeles, black car fleet LA",
+    description: "Eclipse Transport's luxury fleet in Los Angeles: Cadillac Escalade, Chevrolet Suburban & Lincoln Continental. Premium SUVs and sedans for airport transfers, corporate travel, weddings & events.",
+    keywords: "Cadillac Escalade limo Los Angeles, Chevrolet Suburban chauffeur LA, Lincoln Continental car service, luxury SUV car service Los Angeles, black car fleet LA",
     canonical: "https://eclipsetransportla.com/fleet",
   });
 

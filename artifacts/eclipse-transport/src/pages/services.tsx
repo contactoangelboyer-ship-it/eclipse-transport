@@ -83,7 +83,7 @@ const STATIC_SERVICES = [
     priceFrom: 120,
     features: [
       "Professional licensed chauffeur",
-      "Group SUV & sprinter van options",
+      "Group SUV options",
       "Red carpet arrival experience",
       "Complimentary photos at drop-off",
     ],

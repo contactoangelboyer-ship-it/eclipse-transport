@@ -137,12 +137,6 @@ export function Navbar({ hideLogo = false }: NavbarProps) {
                                 <span className="block text-xs font-medium text-[#1A1A1A]/50 mt-1 group-hover/item:text-[#1A1A1A]/40 transition-colors">Lincoln Continental</span>
                               </Link>
                             </li>
-                            <li>
-                              <Link href="/fleet" className="block text-sm font-semibold text-[#1A1A1A] hover:text-black/60 transition-colors group/item">
-                                Luxury Sedan
-                                <span className="block text-xs font-medium text-[#1A1A1A]/50 mt-1 group-hover/item:text-[#1A1A1A]/40 transition-colors">Mercedes-Benz S-Class</span>
-                              </Link>
-                            </li>
                           </ul>
                         </div>
                       </motion.div>
@@ -233,9 +227,6 @@ export function Navbar({ hideLogo = false }: NavbarProps) {
                           <p className="text-[9px] uppercase tracking-[0.25em] text-white/30 font-bold">Sedans</p>
                           <Link href="/fleet" onClick={() => setMobileMenuOpen(false)} className="text-sm font-medium text-white/70 hover:text-white transition-colors">
                             Executive Sedan <span className="text-white/30 text-xs ml-1">Lincoln Continental</span>
-                          </Link>
-                          <Link href="/fleet" onClick={() => setMobileMenuOpen(false)} className="text-sm font-medium text-white/70 hover:text-white transition-colors">
-                            Luxury Sedan <span className="text-white/30 text-xs ml-1">Mercedes-Benz S-Class</span>
                           </Link>
                         </div>
                       </div>
