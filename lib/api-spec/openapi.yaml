@@ -621,6 +621,8 @@ components:
           type: number
         hourlyRate:
           type: number
+        ratePerMile:
+          type: number
 
     VehicleInput:
       type: object
@@ -656,6 +658,9 @@ components:
           type: number
           minimum: 0
         hourlyRate:
+          type: number
+          minimum: 0
+        ratePerMile:
           type: number
           minimum: 0
 
@@ -708,7 +713,7 @@ components:
 
     Booking:
       type: object
-      required: [id, passengerName, passengerEmail, passengerPhone, pickupLocation, dropoffLocation, pickupDate, pickupTime, serviceType, status, createdAt]
+      required: [id, passengerName, passengerEmail, passengerPhone, pickupLocation, dropoffLocation, pickupDate, pickupTime, serviceType, status, paymentStatus, createdAt, updatedAt]
       properties:
         id:
           type: number
@@ -730,14 +735,25 @@ components:
           type: string
         passengers:
           type: number
+        luggage:
+          type: number
+        vehicleType:
+          type: string
         specialRequests:
           type: ["string", "null"]
         status:
           type: string
           enum: [pending, confirmed, completed, cancelled]
+        paymentStatus:
+          type: string
+          enum: [pending, paid, refunded]
+        stripePaymentIntentId:
+          type: ["string", "null"]
         totalPrice:
           type: ["number", "null"]
         createdAt:
+          type: string
+        updatedAt:
           type: string
 
     BookingInput:
@@ -778,6 +794,8 @@ components:
           minimum: 0
         specialRequests:
           type: string
+        stripePaymentIntentId:
+          type: string
 
     BookingUpdate:
       type: object
@@ -788,6 +806,11 @@ components:
         totalPrice:
           type: number
         specialRequests:
+          type: string
+        paymentStatus:
+          type: string
+          enum: [pending, paid, refunded]
+        stripePaymentIntentId:
           type: string
 
     ContactInput:

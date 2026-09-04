@@ -30,4 +30,5 @@ export interface BookingInput {
   /** @minimum 0 */
   estimatedPrice?: number;
   specialRequests?: string;
+  stripePaymentIntentId?: string;
 }

@@ -22,19 +22,13 @@ import {
 import { StripeCheckout } from "@/components/StripeCheckout";
 import { useSEO } from "@/hooks/useSEO";
 
-import suburbanImg from "@assets/generated_images/fleet-suburban.jpg";
-import escaladeImg from "@assets/generated_images/fleet-escalade.jpg";
-import lincolnImg from "@assets/generated_images/fleet-lincoln.jpg";
+import { VEHICLE_CATALOG } from "@/lib/vehicles";
 
 import eclipseLogoTransparent from "@assets/eclipse-logo-new-transparent.png";
 
 /* ─────────────────────────── data ─────────────────────────── */
 
-const vehicles = [
-  { id: "suburban", name: "Suburban", model: "Chevrolet Suburban",     category: "SUV",   pax: 7, bags: 6, image: suburbanImg, amenities: ["Wi-Fi", "Privacy glass"] },
-  { id: "escalade", name: "Escalade", model: "Cadillac Escalade ESV",  category: "SUV",   pax: 7, bags: 6, image: escaladeImg, amenities: ["Sunroof", "Premium audio"] },
-  { id: "sedan",    name: "Sedan",    model: "Luxury Sedan",           category: "Sedan", pax: 3, bags: 3, image: lincolnImg,  amenities: ["Executive seating", "Massaging seats"] },
-];
+const vehicles = VEHICLE_CATALOG;
 
 const serviceTypes = [
   { id: "Airport Transfer",   icon: Plane,     label: "Airport",        desc: "LAX · BUR · LGB · SNA · ONT" },
@@ -342,6 +336,7 @@ export default function Book() {
       serviceType:     data.serviceType,
       specialRequests: reqs.join(" | "),
       estimatedPrice:  displayTotal,
+      stripePaymentIntentId: piId,
     });
   };
 
@@ -554,10 +549,10 @@ export default function Book() {
                             </div>
                             <div className="flex gap-2 mt-2">
                               <span className="flex items-center gap-1 text-[11px] font-medium text-gray-600 bg-gray-100 px-2 py-0.5 rounded-md">
-                                <Users className="w-3 h-3" /> {v.pax}
+                                <Users className="w-3 h-3" /> {v.capacity}
                               </span>
                               <span className="flex items-center gap-1 text-[11px] font-medium text-gray-600 bg-gray-100 px-2 py-0.5 rounded-md">
-                                <Luggage className="w-3 h-3" /> {v.bags}
+                                <Luggage className="w-3 h-3" /> {v.luggageCount}
                               </span>
                             </div>
                           </div>
@@ -580,9 +575,9 @@ export default function Book() {
                   {/* Pax & Luggage */}
                   <div className="bg-gray-50 rounded-2xl px-5">
                     <Counter label="Passengers" value={values.passengers}
-                      onChange={v => setValue("passengers", v)} min={1} max={vehicle?.pax || 14} />
+                      onChange={v => setValue("passengers", v)} min={1} max={vehicle?.capacity || 14} />
                     <Counter label="Luggage pieces" value={values.luggage}
-                      onChange={v => setValue("luggage", v)} min={0} max={vehicle?.bags || 10} />
+                      onChange={v => setValue("luggage", v)} min={0} max={vehicle?.luggageCount || 10} />
                     <Counter label="Extra Stops" note="+$15 per stop"
                       value={values.extraStops || 0} onChange={v => setValue("extraStops", v)} min={0} max={5} />
                   </div>

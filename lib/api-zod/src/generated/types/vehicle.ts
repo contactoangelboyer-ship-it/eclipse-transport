@@ -19,4 +19,5 @@ export interface Vehicle {
   luggageCapacity?: number;
   flatRate?: number;
   hourlyRate?: number;
+  ratePerMile?: number;
 }

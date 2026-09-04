@@ -11,4 +11,6 @@ export interface BookingUpdate {
   status?: BookingUpdateStatus;
   totalPrice?: number;
   specialRequests?: string;
+  paymentStatus?: 'pending' | 'paid' | 'refunded';
+  stripePaymentIntentId?: string;
 }

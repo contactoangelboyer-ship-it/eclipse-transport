@@ -40,8 +40,12 @@ const schemaStatements = [
     pickup_time TEXT NOT NULL,
     service_type TEXT NOT NULL,
     passengers INTEGER NOT NULL DEFAULT 1,
+    luggage INTEGER NOT NULL DEFAULT 0,
+    vehicle_type TEXT NOT NULL DEFAULT '',
     special_requests TEXT,
     status TEXT NOT NULL DEFAULT 'pending',
+    payment_status TEXT NOT NULL DEFAULT 'pending',
+    stripe_payment_intent_id TEXT,
     total_price REAL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
@@ -99,6 +103,18 @@ async function initializeDatabase(): Promise<void> {
       ADD COLUMN IF NOT EXISTS vehicle_type TEXT NOT NULL DEFAULT '',
       ADD COLUMN IF NOT EXISTS amenities TEXT[] NOT NULL DEFAULT ARRAY[]::TEXT[],
       ADD COLUMN IF NOT EXISTS description TEXT NOT NULL DEFAULT ''
+  `);
+
+  // Ensure the bookings table has all columns the Drizzle schema expects.
+  // Older deployments created the table without payment_status / stripe /
+  // vehicle_type / luggage, which caused every SELECT to fail with a
+  // "column does not exist" error — so the admin could never see reservations.
+  await pool.query(`
+    ALTER TABLE bookings
+      ADD COLUMN IF NOT EXISTS luggage INTEGER NOT NULL DEFAULT 0,
+      ADD COLUMN IF NOT EXISTS vehicle_type TEXT NOT NULL DEFAULT '',
+      ADD COLUMN IF NOT EXISTS payment_status TEXT NOT NULL DEFAULT 'pending',
+      ADD COLUMN IF NOT EXISTS stripe_payment_intent_id TEXT
   `);
 
   await pool.query(`

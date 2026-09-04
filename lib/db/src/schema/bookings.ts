@@ -13,6 +13,8 @@ export const bookingsTable = pgTable("bookings", {
   pickupTime: text("pickup_time").notNull(),
   serviceType: text("service_type").notNull(),
   passengers: integer("passengers").notNull().default(1),
+  luggage: integer("luggage").notNull().default(0),
+  vehicleType: text("vehicle_type").notNull().default(""),
   specialRequests: text("special_requests"),
   status: text("status").notNull().default("pending"),
   paymentStatus: text("payment_status").notNull().default("pending"),

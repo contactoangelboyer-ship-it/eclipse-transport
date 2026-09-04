@@ -42,6 +42,7 @@ export interface Vehicle {
   luggageCapacity?: number;
   flatRate?: number;
   hourlyRate?: number;
+  ratePerMile?: number;
 }
 
 export interface VehicleInput {
@@ -66,6 +67,8 @@ export interface VehicleInput {
   flatRate?: number;
   /** @minimum 0 */
   hourlyRate?: number;
+  /** @minimum 0 */
+  ratePerMile?: number;
 }
 
 export interface Zone {
@@ -116,12 +119,18 @@ export interface Booking {
   pickupTime: string;
   serviceType: string;
   passengers?: number;
+  luggage?: number;
+  vehicleType?: string;
   /** @nullable */
   specialRequests?: string | null;
   status: BookingStatus;
+  paymentStatus?: string;
+  /** @nullable */
+  stripePaymentIntentId?: string | null;
   /** @nullable */
   totalPrice?: number | null;
   createdAt: string;
+  updatedAt?: string;
 }
 
 export interface BookingInput {
@@ -148,6 +157,7 @@ export interface BookingInput {
   /** @minimum 0 */
   estimatedPrice?: number;
   specialRequests?: string;
+  stripePaymentIntentId?: string;
 }
 
 export type BookingUpdateStatus = typeof BookingUpdateStatus[keyof typeof BookingUpdateStatus];
@@ -164,6 +174,8 @@ export interface BookingUpdate {
   status?: BookingUpdateStatus;
   totalPrice?: number;
   specialRequests?: string;
+  paymentStatus?: 'pending' | 'paid' | 'refunded';
+  stripePaymentIntentId?: string;
 }
 
 export interface ContactInput {

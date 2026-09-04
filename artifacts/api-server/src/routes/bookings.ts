@@ -98,9 +98,13 @@ router.post("/bookings", async (req, res): Promise<void> => {
       pickupTime: parsed.data.pickupTime,
       serviceType: parsed.data.serviceType,
       passengers: parsed.data.passengers ?? 1,
+      luggage: parsed.data.luggage ?? 0,
+      vehicleType: parsed.data.vehicleType ?? "",
       specialRequests: parsed.data.specialRequests ?? null,
       totalPrice: parsed.data.estimatedPrice ?? null,
+      stripePaymentIntentId: parsed.data.stripePaymentIntentId ?? null,
       status: "pending",
+      paymentStatus: parsed.data.stripePaymentIntentId ? "paid" : "pending",
     })
     .returning();
 
@@ -144,6 +148,8 @@ router.patch("/bookings/:id", async (req, res): Promise<void> => {
   if (parsed.data.status !== undefined) updateData.status = parsed.data.status;
   if (parsed.data.totalPrice !== undefined) updateData.totalPrice = parsed.data.totalPrice;
   if (parsed.data.specialRequests !== undefined) updateData.specialRequests = parsed.data.specialRequests;
+  if (parsed.data.paymentStatus !== undefined) updateData.paymentStatus = parsed.data.paymentStatus;
+  if (parsed.data.stripePaymentIntentId !== undefined) updateData.stripePaymentIntentId = parsed.data.stripePaymentIntentId;
 
   const [booking] = await db
     .update(bookingsTable)

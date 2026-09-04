@@ -18,10 +18,16 @@ export interface Booking {
   pickupTime: string;
   serviceType: string;
   passengers?: number;
+  luggage?: number;
+  vehicleType?: string;
   /** @nullable */
   specialRequests?: string | null;
   status: BookingStatus;
+  paymentStatus?: string;
+  /** @nullable */
+  stripePaymentIntentId?: string | null;
   /** @nullable */
   totalPrice?: number | null;
   createdAt: string;
+  updatedAt?: string;
 }

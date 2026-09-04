@@ -3,90 +3,9 @@ import { Link } from "wouter";
 import { Users, Wifi, Briefcase, CheckCircle2 } from "lucide-react";
 import { motion } from "framer-motion";
 import { useSEO } from "@/hooks/useSEO";
+import { VEHICLE_CATALOG } from "@/lib/vehicles";
 
-import suburbanImg from "@assets/generated_images/fleet-suburban.jpg";
-import escaladeImg from "@assets/generated_images/fleet-escalade.jpg";
-import lincolnImg from "@assets/generated_images/fleet-lincoln.jpg";
-import mercedesImg from "@assets/generated_images/fleet-mercedes.jpg";
-
-const vehicles = [
-  {
-    id: "suburban",
-    category: "SUVs",
-    name: "Suburban",
-    year: "2025",
-    model: "Chevrolet Suburban S",
-    description: "The pinnacle of understated luxury. Exceptionally spacious, impeccably maintained, and equipped for the most demanding clientele.",
-    capacity: 7,
-    luggage: "6 bags",
-    minimumFare: "$140 base (15 miles included)",
-    extraMileRate: "$2.95 per mile beyond 15 miles",
-    hourlyRate: "$80/hr",
-    hasWifi: true,
-    hasPrivacy: true,
-    hasChildSeat: true,
-    amenities: ["High-speed Wi-Fi", "Tinted Windows", "Climate Control", "Bottled Water"],
-    image: suburbanImg,
-    reverse: false
-  },
-  {
-    id: "escalade",
-    category: "SUVs",
-    name: "Escalade",
-    year: "2024",
-    model: "Cadillac Escalade ESV",
-    description: "Commanding presence with refined interiors. Offers an unparalleled ride experience with cutting-edge technology and premium leather seating.",
-    capacity: 7,
-    luggage: "6 bags",
-    minimumFare: "$140 base (15 miles included)",
-    extraMileRate: "$3.40 per mile beyond 15 miles",
-    hourlyRate: "$95/hr",
-    hasWifi: true,
-    hasPrivacy: true,
-    hasChildSeat: true,
-    amenities: ["Panoramic Sunroof", "Premium Audio", "Heated Seats", "Privacy Glass"],
-    image: escaladeImg,
-    reverse: true
-  },
-  {
-    id: "lincoln",
-    category: "Sedans",
-    name: "Lincoln Continental",
-    year: "2024",
-    model: "Lincoln Continental",
-    description: "Classic executive elegance. A quiet, smooth journey perfect for airport transfers and corporate travel with ample legroom.",
-    capacity: 3,
-    luggage: "3 bags",
-    minimumFare: "$100 base (15 miles included)",
-    extraMileRate: "$2.40 per mile beyond 15 miles",
-    hourlyRate: "$75/hr",
-    hasWifi: true,
-    hasPrivacy: true,
-    hasChildSeat: false,
-    amenities: ["Executive Rear Seating", "Noise Cancellation", "Rear Climate Control"],
-    image: lincolnImg,
-    reverse: false
-  },
-  {
-    id: "mercedes",
-    category: "Sedans",
-    name: "Mercedes S-Class",
-    year: "2024",
-    model: "Mercedes-Benz S-Class",
-    description: "The ultimate standard in luxury sedans. State-of-the-art safety, exquisite craftsmanship, and an extraordinarily smooth ride.",
-    capacity: 3,
-    luggage: "3 bags",
-    minimumFare: "$100 base (15 miles included)",
-    extraMileRate: "$2.40 per mile beyond 15 miles",
-    hourlyRate: "$75/hr",
-    hasWifi: true,
-    hasPrivacy: true,
-    hasChildSeat: false,
-    amenities: ["Ambient Lighting", "Massaging Seats", "Burmester Audio", "Rear Screens"],
-    image: mercedesImg,
-    reverse: true
-  }
-];
+const vehicles = VEHICLE_CATALOG;
 
 export default function Fleet() {
   useSEO({

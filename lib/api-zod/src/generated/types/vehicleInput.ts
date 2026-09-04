@@ -28,4 +28,6 @@ export interface VehicleInput {
   flatRate?: number;
   /** @minimum 0 */
   hourlyRate?: number;
+  /** @minimum 0 */
+  ratePerMile?: number;
 }

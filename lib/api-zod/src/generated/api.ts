@@ -46,7 +46,8 @@ export const ListFleetResponseItem = zod.object({
   "vehicleType": zod.string().optional(),
   "luggageCapacity": zod.number().optional(),
   "flatRate": zod.number().optional(),
-  "hourlyRate": zod.number().optional()
+  "hourlyRate": zod.number().optional(),
+  "ratePerMile": zod.number().optional()
 })
 export const ListFleetResponse = zod.array(ListFleetResponseItem)
 
@@ -69,10 +70,15 @@ export const ListBookingsResponseItem = zod.object({
   "pickupTime": zod.string(),
   "serviceType": zod.string(),
   "passengers": zod.number().optional(),
+  "luggage": zod.number().optional(),
+  "vehicleType": zod.string().optional(),
   "specialRequests": zod.string().nullish(),
   "status": zod.enum(['pending', 'confirmed', 'completed', 'cancelled']),
+  "paymentStatus": zod.string().optional(),
+  "stripePaymentIntentId": zod.string().nullish(),
   "totalPrice": zod.number().nullish(),
-  "createdAt": zod.string()
+  "createdAt": zod.string(),
+  "updatedAt": zod.string().optional()
 })
 export const ListBookingsResponse = zod.array(ListBookingsResponseItem)
 
@@ -105,7 +111,8 @@ export const CreateBookingBody = zod.object({
   "luggage": zod.number().min(createBookingBodyLuggageMin).optional(),
   "vehicleType": zod.string().optional(),
   "estimatedPrice": zod.number().min(createBookingBodyEstimatedPriceMin).optional(),
-  "specialRequests": zod.string().optional()
+  "specialRequests": zod.string().optional(),
+  "stripePaymentIntentId": zod.string().optional()
 })
 
 export const CreateBookingResponse = zod.object({
@@ -119,10 +126,15 @@ export const CreateBookingResponse = zod.object({
   "pickupTime": zod.string(),
   "serviceType": zod.string(),
   "passengers": zod.number().optional(),
+  "luggage": zod.number().optional(),
+  "vehicleType": zod.string().optional(),
   "specialRequests": zod.string().nullish(),
   "status": zod.enum(['pending', 'confirmed', 'completed', 'cancelled']),
+  "paymentStatus": zod.string().optional(),
+  "stripePaymentIntentId": zod.string().nullish(),
   "totalPrice": zod.number().nullish(),
-  "createdAt": zod.string()
+  "createdAt": zod.string(),
+  "updatedAt": zod.string().optional()
 })
 
 
@@ -144,10 +156,15 @@ export const GetBookingResponse = zod.object({
   "pickupTime": zod.string(),
   "serviceType": zod.string(),
   "passengers": zod.number().optional(),
+  "luggage": zod.number().optional(),
+  "vehicleType": zod.string().optional(),
   "specialRequests": zod.string().nullish(),
   "status": zod.enum(['pending', 'confirmed', 'completed', 'cancelled']),
+  "paymentStatus": zod.string().optional(),
+  "stripePaymentIntentId": zod.string().nullish(),
   "totalPrice": zod.number().nullish(),
-  "createdAt": zod.string()
+  "createdAt": zod.string(),
+  "updatedAt": zod.string().optional()
 })
 
 
@@ -161,7 +178,9 @@ export const UpdateBookingParams = zod.object({
 export const UpdateBookingBody = zod.object({
   "status": zod.enum(['pending', 'confirmed', 'completed', 'cancelled']).optional(),
   "totalPrice": zod.number().optional(),
-  "specialRequests": zod.string().optional()
+  "specialRequests": zod.string().optional(),
+  "paymentStatus": zod.enum(['pending', 'paid', 'refunded']).optional(),
+  "stripePaymentIntentId": zod.string().optional()
 })
 
 export const UpdateBookingResponse = zod.object({
@@ -175,10 +194,15 @@ export const UpdateBookingResponse = zod.object({
   "pickupTime": zod.string(),
   "serviceType": zod.string(),
   "passengers": zod.number().optional(),
+  "luggage": zod.number().optional(),
+  "vehicleType": zod.string().optional(),
   "specialRequests": zod.string().nullish(),
   "status": zod.enum(['pending', 'confirmed', 'completed', 'cancelled']),
+  "paymentStatus": zod.string().optional(),
+  "stripePaymentIntentId": zod.string().nullish(),
   "totalPrice": zod.number().nullish(),
-  "createdAt": zod.string()
+  "createdAt": zod.string(),
+  "updatedAt": zod.string().optional()
 })
 
 
@@ -200,10 +224,15 @@ export const CancelBookingResponse = zod.object({
   "pickupTime": zod.string(),
   "serviceType": zod.string(),
   "passengers": zod.number().optional(),
+  "luggage": zod.number().optional(),
+  "vehicleType": zod.string().optional(),
   "specialRequests": zod.string().nullish(),
   "status": zod.enum(['pending', 'confirmed', 'completed', 'cancelled']),
+  "paymentStatus": zod.string().optional(),
+  "stripePaymentIntentId": zod.string().nullish(),
   "totalPrice": zod.number().nullish(),
-  "createdAt": zod.string()
+  "createdAt": zod.string(),
+  "updatedAt": zod.string().optional()
 })
 
 
@@ -275,7 +304,8 @@ export const AdminListFleetResponseItem = zod.object({
   "vehicleType": zod.string().optional(),
   "luggageCapacity": zod.number().optional(),
   "flatRate": zod.number().optional(),
-  "hourlyRate": zod.number().optional()
+  "hourlyRate": zod.number().optional(),
+  "ratePerMile": zod.number().optional()
 })
 export const AdminListFleetResponse = zod.array(AdminListFleetResponseItem)
 
@@ -295,6 +325,8 @@ export const adminCreateFleetBodyFlatRateMin = 0;
 
 export const adminCreateFleetBodyHourlyRateMin = 0;
 
+export const adminCreateFleetBodyRatePerMileMin = 0;
+
 
 
 export const AdminCreateFleetBody = zod.object({
@@ -308,7 +340,8 @@ export const AdminCreateFleetBody = zod.object({
   "vehicleType": zod.string().optional(),
   "luggageCapacity": zod.number().min(adminCreateFleetBodyLuggageCapacityMin).optional(),
   "flatRate": zod.number().min(adminCreateFleetBodyFlatRateMin).optional(),
-  "hourlyRate": zod.number().min(adminCreateFleetBodyHourlyRateMin).optional()
+  "hourlyRate": zod.number().min(adminCreateFleetBodyHourlyRateMin).optional(),
+  "ratePerMile": zod.number().min(adminCreateFleetBodyRatePerMileMin).optional()
 })
 
 export const AdminCreateFleetResponse = zod.object({
@@ -323,7 +356,8 @@ export const AdminCreateFleetResponse = zod.object({
   "vehicleType": zod.string().optional(),
   "luggageCapacity": zod.number().optional(),
   "flatRate": zod.number().optional(),
-  "hourlyRate": zod.number().optional()
+  "hourlyRate": zod.number().optional(),
+  "ratePerMile": zod.number().optional()
 })
 
 
@@ -346,6 +380,8 @@ export const adminUpdateFleetBodyFlatRateMin = 0;
 
 export const adminUpdateFleetBodyHourlyRateMin = 0;
 
+export const adminUpdateFleetBodyRatePerMileMin = 0;
+
 
 
 export const AdminUpdateFleetBody = zod.object({
@@ -359,7 +395,8 @@ export const AdminUpdateFleetBody = zod.object({
   "vehicleType": zod.string().optional(),
   "luggageCapacity": zod.number().min(adminUpdateFleetBodyLuggageCapacityMin).optional(),
   "flatRate": zod.number().min(adminUpdateFleetBodyFlatRateMin).optional(),
-  "hourlyRate": zod.number().min(adminUpdateFleetBodyHourlyRateMin).optional()
+  "hourlyRate": zod.number().min(adminUpdateFleetBodyHourlyRateMin).optional(),
+  "ratePerMile": zod.number().min(adminUpdateFleetBodyRatePerMileMin).optional()
 })
 
 export const AdminUpdateFleetResponse = zod.object({
@@ -374,7 +411,8 @@ export const AdminUpdateFleetResponse = zod.object({
   "vehicleType": zod.string().optional(),
   "luggageCapacity": zod.number().optional(),
   "flatRate": zod.number().optional(),
-  "hourlyRate": zod.number().optional()
+  "hourlyRate": zod.number().optional(),
+  "ratePerMile": zod.number().optional()
 })
 
 

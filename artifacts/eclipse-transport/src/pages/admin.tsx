@@ -55,6 +55,11 @@ import {
 } from "recharts";
 import type { Booking, Vehicle, Service, Zone, BookingInput } from "@workspace/api-client-react";
 
+/* ── Real-time polling ──
+   New reservations appear in the panel without a manual refresh.
+   5s interval balances "live" feel with server load. */
+const REALTIME_QUERY = { refetchInterval: 5000, refetchOnWindowFocus: true, staleTime: 0 } as const;
+
 /* ── Auth Guard ── */
 function useAdminGuard() {
   const [, setLocation] = useLocation();
@@ -392,9 +397,9 @@ function PrintInvoice({ booking }: { booking: Booking }) {
    DASHBOARD TAB
 ───────────────────────────────────────────────────────────── */
 function DashboardTab({ onGoTo }: { onGoTo: (tab: string) => void }) {
-  const { data: analytics, isLoading } = useAdminGetAnalytics({ query: { queryKey: getAdminGetAnalyticsQueryKey() } });
-  const { data: summary } = useGetBookingSummary({ query: { queryKey: getGetBookingSummaryQueryKey() } });
-  const { data: allBookings } = useListBookings({ query: { queryKey: getListBookingsQueryKey() } });
+  const { data: analytics, isLoading } = useAdminGetAnalytics({ query: { queryKey: getAdminGetAnalyticsQueryKey(), ...REALTIME_QUERY } });
+  const { data: summary } = useGetBookingSummary({ query: { queryKey: getGetBookingSummaryQueryKey(), ...REALTIME_QUERY } });
+  const { data: allBookings } = useListBookings({ query: { queryKey: getListBookingsQueryKey(), ...REALTIME_QUERY } });
 
   const pendingCount = allBookings?.filter(b => b.status === 'pending').length ?? 0;
   const confirmedCount = allBookings?.filter(b => b.status === 'confirmed').length ?? 0;
@@ -587,8 +592,8 @@ function BookingsTab() {
     setBf(prev => ({ ...prev, [key]: e.target.value }));
 
   const filterParam = statusFilter !== "all" ? { status: statusFilter as "pending"|"confirmed"|"completed"|"cancelled" } : {};
-  const { data: bookings, isLoading } = useListBookings(filterParam, { query: { queryKey: getListBookingsQueryKey(filterParam) } });
-  const { data: detailBooking } = useGetBooking(selectedBookingId!, { query: { enabled: !!selectedBookingId, queryKey: getGetBookingQueryKey(selectedBookingId!) } });
+  const { data: bookings, isLoading } = useListBookings(filterParam, { query: { queryKey: getListBookingsQueryKey(filterParam), ...REALTIME_QUERY } });
+  const { data: detailBooking } = useGetBooking(selectedBookingId!, { query: { enabled: !!selectedBookingId, queryKey: getGetBookingQueryKey(selectedBookingId!), refetchInterval: 5000 } });
   const updateBooking = useUpdateBooking();
   const cancelBooking = useCancelBooking();
   const createBooking = useCreateBooking();
@@ -778,6 +783,27 @@ function BookingsTab() {
                 <AdminFieldRow label="Phone" value={detailBooking.passengerPhone} />
                 <AdminFieldRow label="Email" value={detailBooking.passengerEmail} />
                 <AdminFieldRow label="Passengers" value={detailBooking.passengers ?? 1} />
+                <AdminFieldRow label="Luggage" value={`${detailBooking.luggage ?? 0} bag(s)`} />
+              </div>
+            </div>
+
+            <div>
+              <h3 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-4">Vehicle</h3>
+              <div className="bg-white border border-gray-100 p-6 rounded-2xl shadow-sm flex items-center gap-5">
+                {(() => {
+                  const vImg = getVehicleImage(detailBooking.vehicleType || "");
+                  return vImg ? (
+                    <img src={vImg} alt={detailBooking.vehicleType || "Vehicle"} className="w-24 h-24 rounded-2xl object-cover shrink-0" />
+                  ) : (
+                    <div className="w-24 h-24 rounded-2xl bg-gray-50 flex items-center justify-center shrink-0">
+                      <Car size={28} className="text-gray-300" />
+                    </div>
+                  );
+                })()}
+                <div className="min-w-0">
+                  <p className="font-bold text-gray-900 text-lg tracking-tight">{detailBooking.vehicleType || "Not specified"}</p>
+                  <p className="text-xs text-gray-400 font-medium mt-0.5">Selected by passenger at booking</p>
+                </div>
               </div>
             </div>
 
@@ -814,7 +840,7 @@ function BookingsTab() {
                   <select
                     className={`border rounded-xl px-4 py-2 font-bold text-xs outline-none transition-colors ${detailBooking.paymentStatus === 'paid' ? 'bg-green-50 text-green-700 border-green-200' : detailBooking.paymentStatus === 'refunded' ? 'bg-red-50 text-red-700 border-red-200' : 'bg-yellow-50 text-yellow-700 border-yellow-200'}`}
                     value={detailBooking.paymentStatus ?? "pending"}
-                    onChange={e => updateBooking.mutate({ id: detailBooking.id, data: { paymentStatus: e.target.value } }, {
+                    onChange={e => updateBooking.mutate({ id: detailBooking.id, data: { paymentStatus: e.target.value as "pending" | "paid" | "refunded" } }, {
                       onSuccess: () => qc.invalidateQueries({ queryKey: getGetBookingQueryKey(detailBooking.id) })
                     })}
                     disabled={updateBooking.isPending}
@@ -929,7 +955,7 @@ function CalendarTab() {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
 
-  const { data: bookings } = useListBookings({}, { query: { queryKey: getListBookingsQueryKey() } });
+  const { data: bookings } = useListBookings({}, { query: { queryKey: getListBookingsQueryKey(), ...REALTIME_QUERY } });
 
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
@@ -2076,8 +2102,8 @@ export default function Admin() {
   const [activeTab, setActiveTab] = useState<TabId>('dashboard');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  const { data: allBookings } = useListBookings({}, { query: { queryKey: getListBookingsQueryKey() } });
-  const { data: contacts } = useAdminListContacts({ query: { queryKey: getAdminListContactsQueryKey() } });
+  const { data: allBookings } = useListBookings({}, { query: { queryKey: getListBookingsQueryKey(), ...REALTIME_QUERY } });
+  const { data: contacts } = useAdminListContacts({ query: { queryKey: getAdminListContactsQueryKey(), ...REALTIME_QUERY } });
 
   const pendingCount = allBookings?.filter(b => b.status === 'pending').length ?? 0;
   const contactCount = contacts?.length ?? 0;
