@@ -9,11 +9,14 @@ import suburbanImg from "@assets/generated_images/fleet-suburban.jpg";
 import escaladeImg from "@assets/generated_images/fleet-escalade.jpg";
 import lincolnImg from "@assets/generated_images/fleet-lincoln.jpg";
 import mercedesImg from "@assets/generated_images/fleet-mercedes.jpg";
+import sprinterImg from "@assets/generated_images/fleet-sprinter.jpg";
+import limousineImg from "@assets/generated_images/fleet-limousine.jpg";
+import partybusImg from "@assets/generated_images/fleet-partybus.jpg";
 import { BOOKING_VEHICLES } from "@workspace/booking-pricing";
 
 export interface CatalogVehicle {
   id: string;
-  category: "SUVs" | "Sedans";
+  category: "SUVs" | "Sedans" | "Vans" | "Limousines" | "Party Buses";
   name: string;
   year: string;
   model: string;
@@ -121,6 +124,69 @@ export const VEHICLE_CATALOG: CatalogVehicle[] = [
     amenities: ["Ambient Lighting", "Massaging Seats", "Burmester Audio", "Rear Screens"],
     image: mercedesImg,
     reverse: true,
+  },
+  {
+    id: "sprinter",
+    category: "Vans",
+    name: "Sprinter Van",
+    year: "2024",
+    model: "Mercedes Sprinter",
+    description:
+      "Premium 14-passenger group transport. Configurable executive seating, standing headroom, and onboard Wi-Fi — ideal for crews, production sets, and large parties.",
+    capacity: 14,
+    luggage: "12 bags",
+    luggageCount: 12,
+    minimumFare: fareLabel(BOOKING_VEHICLES.sprinter),
+    extraMileRate: extraMileLabel(BOOKING_VEHICLES.sprinter),
+    hourlyRate: hourlyLabel(BOOKING_VEHICLES.sprinter),
+    hasWifi: true,
+    hasPrivacy: true,
+    hasChildSeat: true,
+    amenities: ["14-Passenger Seating", "Standing Headroom", "High-speed Wi-Fi", "Climate Control"],
+    image: sprinterImg,
+    reverse: false,
+  },
+  {
+    id: "limousine",
+    category: "Limousines",
+    name: "Stretch Limousine",
+    year: "2024",
+    model: "Luxury Stretch Limousine",
+    description:
+      "Timeless prestige for weddings, proms, and red-carpet arrivals. Fiber-optic ambient lighting, privacy partition, and champagne-ready ambiance.",
+    capacity: 8,
+    luggage: "6 bags",
+    luggageCount: 6,
+    minimumFare: fareLabel(BOOKING_VEHICLES.limousine),
+    extraMileRate: extraMileLabel(BOOKING_VEHICLES.limousine),
+    hourlyRate: hourlyLabel(BOOKING_VEHICLES.limousine),
+    hasWifi: true,
+    hasPrivacy: true,
+    hasChildSeat: false,
+    amenities: ["Privacy Partition", "Fiber-Optic Lighting", "Champagne Ready", "Premium Audio"],
+    image: limousineImg,
+    reverse: true,
+  },
+  {
+    id: "partybus",
+    category: "Party Buses",
+    name: "Party Bus",
+    year: "2024",
+    model: "Luxury Party Bus",
+    description:
+      "Rolling celebration for 20 guests. Wraparound leather seating, dance pole, sound system, LED lighting, and a fully stocked bar setup — the night starts on board.",
+    capacity: 20,
+    luggage: "10 bags",
+    luggageCount: 10,
+    minimumFare: fareLabel(BOOKING_VEHICLES.partybus),
+    extraMileRate: extraMileLabel(BOOKING_VEHICLES.partybus),
+    hourlyRate: hourlyLabel(BOOKING_VEHICLES.partybus),
+    hasWifi: true,
+    hasPrivacy: true,
+    hasChildSeat: false,
+    amenities: ["20-Guest Capacity", "Dance Pole", "LED Party Lighting", "Premium Sound System"],
+    image: partybusImg,
+    reverse: false,
   },
 ];
 

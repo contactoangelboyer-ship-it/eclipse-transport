@@ -4,6 +4,9 @@ import suburbanImg from "@assets/generated_images/fleet-suburban.jpg";
 import escaladeImg from "@assets/generated_images/fleet-escalade.jpg";
 import lincolnImg from "@assets/generated_images/fleet-lincoln.jpg";
 import mercedesImg from "@assets/generated_images/fleet-mercedes.jpg";
+import sprinterImg from "@assets/generated_images/fleet-sprinter.jpg";
+import limousineImg from "@assets/generated_images/fleet-limousine.jpg";
+import partybusImg from "@assets/generated_images/fleet-partybus.jpg";
 import serviceAirport from "@assets/generated_images/service-airport.jpg";
 import serviceCorporate from "@assets/generated_images/service-corporate.jpg";
 import { createPortal } from "react-dom";
@@ -106,6 +109,9 @@ export const getVehicleImage = (v?: { name?: string; model?: string; imageUrl?: 
     const lower = v.toLowerCase();
     if (lower.includes("escalade")) return escaladeImg;
     if (lower.includes("suburban")) return suburbanImg;
+    if (lower.includes("sprinter")) return sprinterImg;
+    if (lower.includes("limo")) return limousineImg;
+    if (lower.includes("party")) return partybusImg;
     if (lower.includes("lincoln") || lower.includes("sedan")) return lincolnImg;
     if (lower.includes("mercedes")) return mercedesImg;
     return v.startsWith("http") || v.startsWith("data:") || v.startsWith("/assets") ? v : null;
@@ -116,6 +122,9 @@ export const getVehicleImage = (v?: { name?: string; model?: string; imageUrl?: 
   const lower = `${v.name || ""} ${v.model || ""}`.toLowerCase();
   if (lower.includes("escalade")) return escaladeImg;
   if (lower.includes("suburban")) return suburbanImg;
+  if (lower.includes("sprinter")) return sprinterImg;
+  if (lower.includes("limo")) return limousineImg;
+  if (lower.includes("party")) return partybusImg;
   if (lower.includes("lincoln") || lower.includes("sedan")) return lincolnImg;
   if (lower.includes("mercedes")) return mercedesImg;
   return v.imageUrl || null;
@@ -194,6 +203,51 @@ export const DEFAULT_FLEET_VEHICLES: Vehicle[] = [
     imageUrl: mercedesImg,
     description: "The ultimate standard in luxury sedans. State-of-the-art safety, exquisite craftsmanship, and an extraordinarily smooth ride.",
     amenities: ["Ambient lighting", "Massaging seats", "Burmester audio", "Rear screens", "Wi-Fi"],
+  },
+  {
+    id: 5,
+    name: "Sprinter Van",
+    model: "Mercedes Sprinter",
+    year: 2024,
+    capacity: 14,
+    luggageCapacity: 12,
+    vehicleType: "Executive Van",
+    flatRate: 180, // Base Price (15 miles included)
+    ratePerMile: 3.95,
+    hourlyRate: 110,
+    imageUrl: sprinterImg,
+    description: "Premium 14-passenger group transport. Configurable executive seating, standing headroom, and onboard Wi-Fi — ideal for crews, production sets, and large parties.",
+    amenities: ["14-Passenger seating", "Standing headroom", "High-speed Wi-Fi", "Climate control"],
+  },
+  {
+    id: 6,
+    name: "Stretch Limousine",
+    model: "Luxury Stretch Limousine",
+    year: 2024,
+    capacity: 8,
+    luggageCapacity: 6,
+    vehicleType: "Limousine",
+    flatRate: 165, // Base Price (15 miles included)
+    ratePerMile: 3.95,
+    hourlyRate: 100,
+    imageUrl: limousineImg,
+    description: "Timeless prestige for weddings, proms, and red-carpet arrivals. Fiber-optic ambient lighting, privacy partition, and champagne-ready ambiance.",
+    amenities: ["Privacy partition", "Fiber-optic lighting", "Champagne ready", "Premium audio"],
+  },
+  {
+    id: 7,
+    name: "Party Bus",
+    model: "Luxury Party Bus",
+    year: 2024,
+    capacity: 20,
+    luggageCapacity: 10,
+    vehicleType: "Party Bus",
+    flatRate: 220, // Base Price (15 miles included)
+    ratePerMile: 4.95,
+    hourlyRate: 150,
+    imageUrl: partybusImg,
+    description: "Rolling celebration for 20 guests. Wraparound leather seating, dance pole, sound system, LED lighting, and a fully stocked bar setup — the night starts on board.",
+    amenities: ["20-Guest capacity", "Dance pole", "LED party lighting", "Premium sound system"],
   }
 ];
 
@@ -202,17 +256,28 @@ function defaultRateFor(name: string | undefined, field: "ratePerMile" | "flatRa
   const lower = (name || "").toLowerCase();
   const isSuv = lower.includes("suburban") || lower.includes("escalade");
   const isSedan = lower.includes("lincoln") || lower.includes("sedan") || lower.includes("mercedes");
+  const isVan = lower.includes("sprinter") || lower.includes("van");
+  const isLimo = lower.includes("limo");
+  const isParty = lower.includes("party");
   switch (field) {
     case "ratePerMile":
       if (lower.includes("escalade")) return 3.40;
       if (lower.includes("suburban")) return 2.95;
+      if (isParty) return 4.95;
+      if (isVan || isLimo) return 3.95;
       if (isSedan) return 2.40;
       return 2.95;
     case "flatRate":
+      if (isParty) return 220;
+      if (isVan) return 180;
+      if (isLimo) return 165;
       return isSuv ? 140 : isSedan ? 100 : 140;
     case "hourlyRate":
       if (lower.includes("escalade")) return 95;
       if (lower.includes("suburban")) return 80;
+      if (isParty) return 150;
+      if (isVan) return 110;
+      if (isLimo) return 100;
       if (isSedan) return 75;
       return 80;
   }
@@ -927,9 +992,6 @@ function BookingsTab() {
                       <option value="By the Hour">By the Hour</option>
                       <option value="Point-to-Point">Point-to-Point</option>
                       <option value="Wedding & Events">Wedding & Events</option>
-                      <option value="Wine Tours">Wine Tours</option>
-                      <option value="Birthday">Birthday & Celebration</option>
-                      <option value="City Tour">City Tour</option>
                     </select>
                   </Field>
                   <Field label="Vehicle">
@@ -947,6 +1009,9 @@ function BookingsTab() {
                       <option value="Escalade">Escalade ($140 base · $3.40/mi · $95/hr)</option>
                       <option value="Sedan">Sedan / Lincoln ($100 base · $2.40/mi · $75/hr)</option>
                       <option value="Mercedes S-Class">Mercedes S-Class ($100 base · $2.40/mi · $75/hr)</option>
+                      <option value="Sprinter Van">Sprinter Van ($180 base · $3.95/mi · $110/hr)</option>
+                      <option value="Stretch Limousine">Stretch Limousine ($165 base · $3.95/mi · $100/hr)</option>
+                      <option value="Party Bus">Party Bus ($220 base · $4.95/mi · $150/hr)</option>
                     </select>
                   </Field>
                 </div>

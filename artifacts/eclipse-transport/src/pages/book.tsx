@@ -18,7 +18,6 @@ import {
   Users, Plus, Minus, Luggage, ChevronLeft,
   ChevronRight, Plane, Briefcase, Heart, Music, Trophy,
   Car, Church, Wind, MapPin, Clock,
-  Wine, PartyPopper, Camera,
 } from "lucide-react";
 import { StripeCheckout } from "@/components/StripeCheckout";
 import { useSEO } from "@/hooks/useSEO";
@@ -42,9 +41,6 @@ const serviceTypes = [
   { id: "Prom",               icon: Car,       label: "Prom",           desc: "Safe & stylish prom night" },
   { id: "Sports Events",      icon: Trophy,    label: "Sports",         desc: "SoFi, Staples, Dodger Stadium" },
   { id: "Air Transportation", icon: Wind,      label: "Private Air",    desc: "FBO & private aviation" },
-  { id: "Wine Tours",         icon: Wine,       label: "Wine Tours",     desc: "Santa Ynez · Malibu · Temecula tastings" },
-  { id: "Birthday",           icon: PartyPopper,label: "Celebration",   desc: "Birthdays, anniversaries & milestones" },
-  { id: "City Tour",          icon: Camera,     label: "City Tour",      desc: "Hollywood · Beverly Hills · Mulholland" },
 ];
 
 const formatUsd = (amount: number) =>

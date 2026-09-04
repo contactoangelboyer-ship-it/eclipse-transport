@@ -4,19 +4,23 @@ import { Users, Wifi, Briefcase, CheckCircle2 } from "lucide-react";
 import { motion } from "framer-motion";
 import { useSEO } from "@/hooks/useSEO";
 import { VEHICLE_CATALOG } from "@/lib/vehicles";
+import { BOOKING_VEHICLES } from "@workspace/booking-pricing";
 
 const vehicles = VEHICLE_CATALOG;
 
 export default function Fleet() {
   useSEO({
     title: "Our Fleet — Cadillac Escalade, Chevrolet Suburban & Lincoln Continental",
-    description: "Eclipse Transport's luxury fleet in Los Angeles: Cadillac Escalade ESV, Chevrolet Suburban, Lincoln Continental & Mercedes-Benz S-Class. Premium SUVs and sedans for airport transfers, corporate travel, weddings & events.",
+    description: "Eclipse Transport's luxury fleet in Los Angeles: Cadillac Escalade, Chevrolet Suburban, Lincoln Continental, Mercedes S-Class, Sprinter Vans, Stretch Limousines & Party Buses. Premium SUVs, sedans, vans & limos for airport transfers, corporate travel, weddings & events.",
     keywords: "Cadillac Escalade limo Los Angeles, Chevrolet Suburban chauffeur LA, Lincoln Continental car service, Mercedes S-Class limo LA, luxury SUV car service Los Angeles, black car fleet LA",
     canonical: "https://eclipsetransportla.com/fleet",
   });
 
   const suvs = vehicles.filter(v => v.category === "SUVs");
   const sedans = vehicles.filter(v => v.category === "Sedans");
+  const vans = vehicles.filter(v => v.category === "Vans");
+  const limos = vehicles.filter(v => v.category === "Limousines");
+  const partyBuses = vehicles.filter(v => v.category === "Party Buses");
 
   return (
     <Layout>
@@ -84,6 +88,39 @@ export default function Fleet() {
             </div>
           </div>
 
+          {vans.length > 0 && (
+            <div className="mb-32">
+              <h2 className="text-[11px] font-bold uppercase tracking-[0.25em] text-[#1A1A1A]/40 mb-16 border-b border-black/5 pb-4">Van Class</h2>
+              <div className="flex flex-col gap-24">
+                {vans.map((vehicle, index) => (
+                  <VehicleCard key={vehicle.id} vehicle={vehicle} index={index} />
+                ))}
+              </div>
+            </div>
+          )}
+
+          {limos.length > 0 && (
+            <div className="mb-32">
+              <h2 className="text-[11px] font-bold uppercase tracking-[0.25em] text-[#1A1A1A]/40 mb-16 border-b border-black/5 pb-4">Limousine Class</h2>
+              <div className="flex flex-col gap-24">
+                {limos.map((vehicle, index) => (
+                  <VehicleCard key={vehicle.id} vehicle={vehicle} index={index} />
+                ))}
+              </div>
+            </div>
+          )}
+
+          {partyBuses.length > 0 && (
+            <div className="mb-32">
+              <h2 className="text-[11px] font-bold uppercase tracking-[0.25em] text-[#1A1A1A]/40 mb-16 border-b border-black/5 pb-4">Party Bus Class</h2>
+              <div className="flex flex-col gap-24">
+                {partyBuses.map((vehicle, index) => (
+                  <VehicleCard key={vehicle.id} vehicle={vehicle} index={index} />
+                ))}
+              </div>
+            </div>
+          )}
+
           <div className="mt-32" data-testid="section-comparison">
             <div className="text-center mb-16">
               <h2 className="text-[11px] font-bold uppercase tracking-[0.25em] text-[#1A1A1A]/40 mb-4">Fleet Specifications</h2>
@@ -91,65 +128,49 @@ export default function Fleet() {
             </div>
             
             <div className="overflow-x-auto rounded-3xl border border-black/5 shadow-sm">
-              <table className="w-full text-left border-collapse min-w-[800px]">
+              <table className="w-full text-left border-collapse min-w-[900px]">
                 <thead>
                   <tr className="bg-[#FCFBF8] border-b border-black/5">
                     <th className="p-6 font-bold text-[10px] uppercase tracking-[0.2em] text-[#1A1A1A]/40">Specification</th>
-                    <th className="p-6 font-bold text-[11px] uppercase tracking-[0.1em] text-[#1A1A1A]">Suburban</th>
-                    <th className="p-6 font-bold text-[11px] uppercase tracking-[0.1em] text-[#1A1A1A]">Escalade</th>
-                    <th className="p-6 font-bold text-[11px] uppercase tracking-[0.1em] text-[#1A1A1A]">Lincoln</th>
-                    <th className="p-6 font-bold text-[11px] uppercase tracking-[0.1em] text-[#1A1A1A]">Mercedes</th>
+                    {vehicles.map((v) => (
+                      <th key={v.id} className="p-6 font-bold text-[11px] uppercase tracking-[0.1em] text-[#1A1A1A] whitespace-nowrap">{v.name}</th>
+                    ))}
                   </tr>
                 </thead>
                 <tbody className="text-sm font-medium text-[#1A1A1A]/80">
                   <tr className="border-b border-black/5 hover:bg-black/[0.02] transition-colors">
                     <td className="p-6 text-[10px] uppercase tracking-[0.15em] font-bold text-[#1A1A1A]/60">Capacity</td>
-                    <td className="p-6">Up to 7</td>
-                    <td className="p-6">Up to 7</td>
-                    <td className="p-6">Up to 3</td>
-                    <td className="p-6">Up to 3</td>
+                    {vehicles.map((v) => <td key={v.id} className="p-6 whitespace-nowrap">Up to {v.capacity}</td>)}
                   </tr>
                   <tr className="bg-[#FCFBF8]/50 border-b border-black/5 hover:bg-black/[0.02] transition-colors">
                     <td className="p-6 text-[10px] uppercase tracking-[0.15em] font-bold text-[#1A1A1A]/60">Luggage</td>
-                    <td className="p-6">6 bags</td>
-                    <td className="p-6">6 bags</td>
-                    <td className="p-6">3 bags</td>
-                    <td className="p-6">3 bags</td>
+                    {vehicles.map((v) => <td key={v.id} className="p-6 whitespace-nowrap">{v.luggage}</td>)}
                   </tr>
                   <tr className="border-b border-black/5 hover:bg-black/[0.02] transition-colors">
                     <td className="p-6 text-[10px] uppercase tracking-[0.15em] font-bold text-[#1A1A1A]/60">Starting Fare</td>
-                    <td className="p-6">$120 (base)</td>
-                    <td className="p-6">$140 (base)</td>
-                    <td className="p-6">$100 (base)</td>
-                    <td className="p-6">$100 (base)</td>
+                    {vehicles.map((v) => <td key={v.id} className="p-6 whitespace-nowrap">{v.minimumFare}</td>)}
                   </tr>
                   <tr className="bg-[#FCFBF8]/50 border-b border-black/5 hover:bg-black/[0.02] transition-colors">
                     <td className="p-6 text-[10px] uppercase tracking-[0.15em] font-bold text-[#1A1A1A]/60">Extra Mile</td>
-                    <td className="p-6">$2.95/mile</td>
-                    <td className="p-6">$3.40/mile</td>
-                    <td className="p-6">$2.40/mile</td>
-                    <td className="p-6">$2.40/mile</td>
+                    {vehicles.map((v) => <td key={v.id} className="p-6 whitespace-nowrap">{v.extraMileRate}</td>)}
                   </tr>
                   <tr className="border-b border-black/5 hover:bg-black/[0.02] transition-colors">
                     <td className="p-6 text-[10px] uppercase tracking-[0.15em] font-bold text-[#1A1A1A]/60">Wi-Fi</td>
-                    <td className="p-6 text-green-600"><CheckCircle2 className="w-5 h-5" /></td>
-                    <td className="p-6 text-green-600"><CheckCircle2 className="w-5 h-5" /></td>
-                    <td className="p-6 text-green-600"><CheckCircle2 className="w-5 h-5" /></td>
-                    <td className="p-6 text-green-600"><CheckCircle2 className="w-5 h-5" /></td>
+                    {vehicles.map((v) => (
+                      <td key={v.id} className="p-6">{v.hasWifi ? <span className="text-green-600"><CheckCircle2 className="w-5 h-5" /></span> : <span className="text-gray-300">-</span>}</td>
+                    ))}
                   </tr>
                   <tr className="bg-[#FCFBF8]/50 border-b border-black/5 hover:bg-black/[0.02] transition-colors">
                     <td className="p-6 text-[10px] uppercase tracking-[0.15em] font-bold text-[#1A1A1A]/60">Privacy Glass</td>
-                    <td className="p-6 text-green-600"><CheckCircle2 className="w-5 h-5" /></td>
-                    <td className="p-6 text-green-600"><CheckCircle2 className="w-5 h-5" /></td>
-                    <td className="p-6 text-green-600"><CheckCircle2 className="w-5 h-5" /></td>
-                    <td className="p-6 text-green-600"><CheckCircle2 className="w-5 h-5" /></td>
+                    {vehicles.map((v) => (
+                      <td key={v.id} className="p-6">{v.hasPrivacy ? <span className="text-green-600"><CheckCircle2 className="w-5 h-5" /></span> : <span className="text-gray-300">-</span>}</td>
+                    ))}
                   </tr>
                   <tr className="hover:bg-black/[0.02] transition-colors">
                     <td className="p-6 text-[10px] uppercase tracking-[0.15em] font-bold text-[#1A1A1A]/60">Child Seat Available</td>
-                    <td className="p-6 text-green-600"><CheckCircle2 className="w-5 h-5" /></td>
-                    <td className="p-6 text-green-600"><CheckCircle2 className="w-5 h-5" /></td>
-                    <td className="p-6 text-gray-300">-</td>
-                    <td className="p-6 text-gray-300">-</td>
+                    {vehicles.map((v) => (
+                      <td key={v.id} className="p-6">{v.hasChildSeat ? <span className="text-green-600"><CheckCircle2 className="w-5 h-5" /></span> : <span className="text-gray-300">-</span>}</td>
+                    ))}
                   </tr>
                 </tbody>
               </table>
