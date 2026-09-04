@@ -927,6 +927,9 @@ function BookingsTab() {
                       <option value="By the Hour">By the Hour</option>
                       <option value="Point-to-Point">Point-to-Point</option>
                       <option value="Wedding & Events">Wedding & Events</option>
+                      <option value="Wine Tours">Wine Tours</option>
+                      <option value="Birthday">Birthday & Celebration</option>
+                      <option value="City Tour">City Tour</option>
                     </select>
                   </Field>
                   <Field label="Vehicle">
