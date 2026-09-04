@@ -595,8 +595,8 @@ function BookingsTab() {
     setBf(prev => ({ ...prev, [key]: e.target.value }));
 
   const filterParam = statusFilter !== "all" ? { status: statusFilter as "pending"|"confirmed"|"completed"|"cancelled" } : {};
-  const { data: bookings, isLoading } = useListBookings(filterParam, { query: { queryKey: getListBookingsQueryKey(filterParam), ...REALTIME_QUERY } });
-  const { data: detailBooking } = useGetBooking(selectedBookingId!, { query: { enabled: !!selectedBookingId, queryKey: getGetBookingQueryKey(selectedBookingId!), refetchInterval: 5000 } });
+  const { data: bookings, isLoading, isError: listIsError, error: listErr, refetch: refetchList } = useListBookings(filterParam, { query: { queryKey: getListBookingsQueryKey(filterParam), ...REALTIME_QUERY } });
+  const { data: detailBooking, isError: detailIsError, error: detailErr, refetch: refetchDetail } = useGetBooking(selectedBookingId!, { query: { enabled: !!selectedBookingId, queryKey: getGetBookingQueryKey(selectedBookingId!), refetchInterval: 5000 } });
   const updateBooking = useUpdateBooking();
   const cancelBooking = useCancelBooking();
   const createBooking = useCreateBooking();
@@ -718,6 +718,13 @@ function BookingsTab() {
         <div className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden">
           {isLoading ? (
             <div className="flex h-64 items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-gray-300" /></div>
+          ) : listIsError ? (
+            <div className="flex flex-col items-center justify-center py-24 text-center">
+              <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mb-4"><AlertCircle className="w-8 h-8 text-red-400" /></div>
+              <p className="font-bold text-gray-900 text-lg">Couldn't load bookings</p>
+              <p className="text-gray-500 mt-1 text-sm mb-5">{listErr instanceof Error ? listErr.message : "Connection error. Please retry."}</p>
+              <button onClick={() => refetchList()} className="flex items-center gap-2 px-5 py-3 bg-[#1A1A1A] text-white rounded-xl text-xs font-bold uppercase tracking-widest hover:bg-gray-800 transition-all shadow-sm"><RefreshCw size={14} /> Retry</button>
+            </div>
           ) : !filtered.length ? (
             <div className="flex flex-col items-center justify-center py-24 text-center">
               <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mb-4"><ClipboardList className="w-8 h-8 text-gray-300" /></div>
@@ -881,6 +888,13 @@ function BookingsTab() {
               {detailBooking.status === 'confirmed' && <button onClick={() => handleStatus('completed')} className="w-full py-4 bg-green-500 text-white font-bold text-sm tracking-widest uppercase rounded-2xl hover:bg-green-600 transition-all shadow-md">Mark Completed</button>}
               {(detailBooking.status === 'pending' || detailBooking.status === 'confirmed') && <button onClick={() => handleStatus('cancelled')} className="w-full py-4 bg-red-50 text-red-600 font-bold text-sm tracking-widest uppercase rounded-2xl hover:bg-red-100 transition-all">Cancel Booking</button>}
             </div>
+          </div>
+        ) : detailIsError ? (
+          <div className="flex flex-col items-center justify-center py-24 text-center">
+            <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mb-4"><AlertCircle className="w-8 h-8 text-red-400" /></div>
+            <p className="font-bold text-gray-900 text-lg">Couldn't open this booking</p>
+            <p className="text-gray-500 mt-1 text-sm mb-5">{detailErr instanceof Error ? detailErr.message : "Connection error. Please retry."}</p>
+            <button onClick={() => refetchDetail()} className="flex items-center gap-2 px-5 py-3 bg-[#1A1A1A] text-white rounded-xl text-xs font-bold uppercase tracking-widest hover:bg-gray-800 transition-all shadow-sm"><RefreshCw size={14} /> Retry</button>
           </div>
         ) : (
           <div className="flex h-64 items-center justify-center"><Loader2 className="animate-spin text-gray-300 w-8 h-8" /></div>

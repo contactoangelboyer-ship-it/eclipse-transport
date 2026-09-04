@@ -17,7 +17,7 @@ import {
   CheckCircle2, Loader2, Check,
   Users, Plus, Minus, Luggage, ChevronLeft,
   ChevronRight, Plane, Briefcase, Heart, Music, Trophy,
-  Car, Church, Wind, MapPin, Clock,
+  Car, Church, Wind, MapPin, Clock, RefreshCw,
 } from "lucide-react";
 import { StripeCheckout } from "@/components/StripeCheckout";
 import { useSEO } from "@/hooks/useSEO";
@@ -145,6 +145,8 @@ export default function Book() {
   const [routeStatus, setRouteStatus]         = useState<"idle" | "calculating" | "ready" | "error">("idle");
   const [routeError, setRouteError]           = useState<string | null>(null);
   const [bookingError, setBookingError]       = useState<string | null>(null);
+  const [pendingBooking, setPendingBooking]   = useState<BookingInput | null>(null);
+  const [isRetrying, setIsRetrying]           = useState(false);
   const paymentSignatureRef                   = useRef<string | null>(null);
   const paymentIdempotencyKeyRef              = useRef<{ signature: string; key: string } | null>(null);
   const queryClient   = useQueryClient();
@@ -304,9 +306,20 @@ export default function Book() {
 
   const saveBooking = (bookingData: BookingInput) => {
     setBookingError(null);
+    setPendingBooking(bookingData);
     createBooking.mutate({ data: bookingData }, {
-      onSuccess: () => { queryClient.invalidateQueries({ queryKey: getListBookingsQueryKey() }); setIsSuccess(true); window.scrollTo({ top: 0, behavior: "smooth" }); },
+      onSuccess: () => { setPendingBooking(null); queryClient.invalidateQueries({ queryKey: getListBookingsQueryKey() }); setIsSuccess(true); window.scrollTo({ top: 0, behavior: "smooth" }); },
       onError: (error) => { setBookingError(error instanceof Error ? error.message : "Payment received but reservation save failed. Please call dispatch."); },
+    });
+  };
+
+  const retrySaveBooking = () => {
+    if (!pendingBooking) return;
+    setIsRetrying(true);
+    createBooking.mutate({ data: pendingBooking }, {
+      onSuccess: () => { setPendingBooking(null); setBookingError(null); queryClient.invalidateQueries({ queryKey: getListBookingsQueryKey() }); setIsSuccess(true); window.scrollTo({ top: 0, behavior: "smooth" }); },
+      onError: (error) => { setBookingError(error instanceof Error ? error.message : "Save failed again. Please call dispatch with your payment ID."); },
+      onSettled: () => setIsRetrying(false),
     });
   };
 
@@ -737,9 +750,25 @@ export default function Book() {
                   )}
 
                   {/* Errors */}
-                  {bookingError && (
-                    <div className="bg-red-50 border border-red-100 text-red-600 text-sm p-4 rounded-2xl font-medium">{bookingError}</div>
-                  )}
+                {bookingError && (
+                  <div className="bg-red-50 border border-red-100 text-red-600 text-sm p-4 rounded-2xl font-medium space-y-3">
+                    <p>{bookingError}</p>
+                    {paymentIntentId && (
+                      <p className="text-xs text-red-500/80 font-mono">Your payment ID: {paymentIntentId}</p>
+                    )}
+                    {pendingBooking && (
+                      <button
+                        type="button"
+                        disabled={isRetrying}
+                        onClick={retrySaveBooking}
+                        className="flex items-center gap-2 px-5 py-2.5 bg-red-600 text-white rounded-xl text-xs font-bold uppercase tracking-widest hover:bg-red-700 transition-all disabled:opacity-50"
+                      >
+                        {isRetrying ? <Loader2 size={14} className="animate-spin" /> : <RefreshCw size={14} />}
+                        Retry saving booking
+                      </button>
+                    )}
+                  </div>
+                )}
                   {piError && (
                     <div className="bg-red-50 border border-red-100 text-red-600 text-sm p-4 rounded-2xl font-medium">{piError}</div>
                   )}
