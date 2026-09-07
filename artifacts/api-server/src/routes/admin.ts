@@ -294,7 +294,7 @@ router.get("/admin/analytics", adminAuth, async (req, res): Promise<void> => {
 /* ── Pricing Config (singleton, id=1) ── */
 
 const PRICING_DEFAULTS = {
-  baseRatePerMile: 3.5,
+  baseRatePerMile: 5.6,
   minimumFare: 75,
   baseFare: 0,
   hourlyRate: 95,

@@ -6,7 +6,7 @@ export const pricingConfigTable = pgTable("pricing_config", {
   id: serial("id").primaryKey(),
 
   // ── Base rates ──────────────────────────────────────────────
-  baseRatePerMile:   real("base_rate_per_mile").notNull().default(3.5),
+  baseRatePerMile:   real("base_rate_per_mile").notNull().default(5.6),
   minimumFare:       real("minimum_fare").notNull().default(75),
   baseFare:          real("base_fare").notNull().default(0),
 

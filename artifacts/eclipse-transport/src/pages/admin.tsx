@@ -1809,7 +1809,7 @@ type PricingData = {
 };
 
 const PRICING_DEFAULTS: PricingData = {
-  baseRatePerMile: 3.5, minimumFare: 75, baseFare: 0,
+  baseRatePerMile: 5.6, minimumFare: 75, baseFare: 0,
   hourlyRate: 95, minimumHours: 2,
   airportPickupFlat: 0, airportDropoffFlat: 0,
   fuelSurcharge: 0, gratuityDefault: 20, nightSurcharge: 0, holidaySurcharge: 0,

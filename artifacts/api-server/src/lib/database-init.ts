@@ -69,7 +69,7 @@ const schemaStatements = [
   )`,
   `CREATE TABLE IF NOT EXISTS pricing_config (
     id SERIAL PRIMARY KEY,
-    base_rate_per_mile REAL NOT NULL DEFAULT 3.5,
+    base_rate_per_mile REAL NOT NULL DEFAULT 5.6,
     minimum_fare REAL NOT NULL DEFAULT 75,
     base_fare REAL NOT NULL DEFAULT 0,
     hourly_rate REAL NOT NULL DEFAULT 95,
