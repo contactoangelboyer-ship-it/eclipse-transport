@@ -167,6 +167,12 @@ async function initializeDatabase(): Promise<void> {
     WHERE NOT EXISTS (SELECT 1 FROM pricing_config)
   `);
 
+  // Migrate old base rate (3.5) → new rate (5.6) for existing installs
+  await pool.query(`
+    UPDATE pricing_config SET base_rate_per_mile = 5.6
+    WHERE base_rate_per_mile = 3.5
+  `);
+
   logger.info("Database schema and booking catalog are ready");
 }
 

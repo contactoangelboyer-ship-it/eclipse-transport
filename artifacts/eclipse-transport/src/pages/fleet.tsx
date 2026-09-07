@@ -1,10 +1,9 @@
 import { Layout } from "@/components/layout/Layout";
 import { Link } from "wouter";
-import { Users, Wifi, Briefcase, CheckCircle2 } from "lucide-react";
+import { Users, Briefcase, CheckCircle2 } from "lucide-react";
 import { motion } from "framer-motion";
 import { useSEO } from "@/hooks/useSEO";
 import { VEHICLE_CATALOG } from "@/lib/vehicles";
-import { BOOKING_VEHICLES } from "@workspace/booking-pricing";
 
 const vehicles = VEHICLE_CATALOG;
 
@@ -146,14 +145,7 @@ export default function Fleet() {
                     <td className="p-6 text-[10px] uppercase tracking-[0.15em] font-bold text-[#1A1A1A]/60">Luggage</td>
                     {vehicles.map((v) => <td key={v.id} className="p-6 whitespace-nowrap">{v.luggage}</td>)}
                   </tr>
-                  <tr className="border-b border-black/5 hover:bg-black/[0.02] transition-colors">
-                    <td className="p-6 text-[10px] uppercase tracking-[0.15em] font-bold text-[#1A1A1A]/60">Starting Fare</td>
-                    {vehicles.map((v) => <td key={v.id} className="p-6 whitespace-nowrap">{v.minimumFare}</td>)}
-                  </tr>
-                  <tr className="bg-[#FCFBF8]/50 border-b border-black/5 hover:bg-black/[0.02] transition-colors">
-                    <td className="p-6 text-[10px] uppercase tracking-[0.15em] font-bold text-[#1A1A1A]/60">Extra Mile</td>
-                    {vehicles.map((v) => <td key={v.id} className="p-6 whitespace-nowrap">{v.extraMileRate}</td>)}
-                  </tr>
+
                   <tr className="border-b border-black/5 hover:bg-black/[0.02] transition-colors">
                     <td className="p-6 text-[10px] uppercase tracking-[0.15em] font-bold text-[#1A1A1A]/60">Wi-Fi</td>
                     {vehicles.map((v) => (
@@ -210,7 +202,7 @@ function VehicleCard({ vehicle, index }: { vehicle: any, index: number }) {
           {vehicle.description}
         </p>
 
-        <div className="grid grid-cols-3 gap-y-8 gap-x-6 mb-12 border-y border-black/5 py-8">
+        <div className="grid grid-cols-2 gap-y-8 gap-x-6 mb-12 border-y border-black/5 py-8">
           <div className="flex items-center gap-4">
             <Users className="w-5 h-5 text-[#1A1A1A]/30" strokeWidth={1.5} />
             <div>
@@ -223,14 +215,6 @@ function VehicleCard({ vehicle, index }: { vehicle: any, index: number }) {
             <div>
               <p className="font-bold text-[#1A1A1A] text-[10px] uppercase tracking-[0.15em]">Luggage</p>
               <p className="text-sm text-[#1A1A1A]/60 mt-1">{vehicle.luggage}</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-4">
-            <Wifi className="w-5 h-5 text-[#1A1A1A]/30" strokeWidth={1.5} />
-            <div>
-              <p className="font-bold text-[#1A1A1A] text-[10px] uppercase tracking-[0.15em]">Starting Fare</p>
-              <p className="text-sm font-semibold text-[#1A1A1A]/80 mt-1">{vehicle.minimumFare}</p>
-              <p className="text-[10px] text-[#1A1A1A]/40 mt-0.5">{vehicle.extraMileRate}</p>
             </div>
           </div>
         </div>
