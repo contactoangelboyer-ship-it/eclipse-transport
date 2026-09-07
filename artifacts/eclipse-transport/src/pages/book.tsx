@@ -75,10 +75,21 @@ const bookingSchema = z.object({
   specialInstructions: z.string().optional(),
   passengerName:       z.string().trim().min(2, "Enter your full name"),
   passengerEmail:      z.string().trim().email("Enter a valid email"),
-  passengerPhone:      z.string().trim().min(7, "Enter a valid phone number"),
+  passengerPhone:      z.string().trim().min(7, "Enter a valid phone number").regex(/^[\d\s()+\-]{7,20}$/, "Enter a valid phone number"),
 }).superRefine((data, ctx) => {
   if (data.serviceType !== "By the Hour" && !data.dropoffLocation?.trim()) {
     ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["dropoffLocation"], message: "Enter drop-off location" });
+  }
+  // No past dates — reservation must be today or later (local date)
+  if (data.pickupDate) {
+    const today = new Date(); today.setHours(0,0,0,0);
+    const sel = new Date(data.pickupDate + "T12:00:00");
+    if (!isNaN(sel.getTime()) && sel < today) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["pickupDate"], message: "Date cannot be in the past" });
+    }
+  }
+  if (data.passengerPhone && data.passengerPhone.replace(/\D/g, "").length < 7) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["passengerPhone"], message: "Enter a valid phone number" });
   }
 });
 
@@ -145,8 +156,16 @@ export default function Book() {
   const [routeStatus, setRouteStatus]         = useState<"idle" | "calculating" | "ready" | "error">("idle");
   const [routeError, setRouteError]           = useState<string | null>(null);
   const [bookingError, setBookingError]       = useState<string | null>(null);
-  const [pendingBooking, setPendingBooking]   = useState<BookingInput | null>(null);
+  const [pendingBooking, setPendingBooking]   = useState<BookingInput | null>(() => {
+    try { const raw = typeof localStorage !== "undefined" ? localStorage.getItem("eclipse_pending_booking") : null; return raw ? JSON.parse(raw) as BookingInput : null; } catch { return null; }
+  });
   const [isRetrying, setIsRetrying]           = useState(false);
+  useEffect(() => {
+    try {
+      if (pendingBooking) localStorage.setItem("eclipse_pending_booking", JSON.stringify(pendingBooking));
+      else localStorage.removeItem("eclipse_pending_booking");
+    } catch {}
+  }, [pendingBooking]);
   const paymentSignatureRef                   = useRef<string | null>(null);
   const paymentIdempotencyKeyRef              = useRef<{ signature: string; key: string } | null>(null);
   const queryClient   = useQueryClient();
@@ -288,6 +307,21 @@ export default function Book() {
           serviceType:   values.serviceType,
           pickupDate:    values.pickupDate || "",
           routeMiles:    routeMiles?.toFixed(2) || "",
+          // Full booking payload (stringified) for webhook recovery if POST /bookings never arrives
+          booking: JSON.stringify({
+            passengerName: values.passengerName?.trim() || "Guest",
+            passengerEmail: values.passengerEmail?.trim() || "",
+            passengerPhone: values.passengerPhone?.trim() || "",
+            pickupLocation: values.pickupLocation?.trim() || "",
+            dropoffLocation: isHourly ? `As directed (${values.duration} hours)` : (values.dropoffLocation?.trim() || ""),
+            pickupDate: values.pickupDate || "",
+            pickupTime: values.pickupTime || "",
+            serviceType: values.serviceType || "",
+            passengers: String(values.passengers ?? 1),
+            luggage: String(values.luggage ?? 0),
+            vehicleType: vehicle?.name || values.vehicleId || "",
+            estimatedPrice: String(displayTotal ?? 0),
+          }).slice(0, 480),
         },
       }),
       signal: controller.signal,
@@ -503,7 +537,7 @@ export default function Book() {
                     <div className="grid grid-cols-2 gap-3">
                       <div>
                         <label className="block text-xs text-gray-400 font-medium mb-2">Pickup Date</label>
-                        <Input type="date" {...register("pickupDate")} className={`h-12 bg-white border-transparent shadow-sm rounded-xl text-sm font-medium ${errors.pickupDate ? "border-red-400 border" : ""}`} />
+                        <Input type="date" {...register("pickupDate")} min={new Date().toISOString().split('T')[0]} className={`h-12 bg-white border-transparent shadow-sm rounded-xl text-sm font-medium ${errors.pickupDate ? "border-red-400 border" : ""}`} />
                         {errors.pickupDate && <p className="text-xs text-red-500 mt-1">{errors.pickupDate.message}</p>}
                       </div>
                       <div>

@@ -119,8 +119,12 @@ export default function Home() {
           <motion.img
             style={{ y }}
             src={heroImg}
-            alt="Los Angeles Luxury Transport"
+            alt="Los Angeles Luxury Transport — private black car on Sunset Boulevard"
             className="absolute inset-0 w-full h-[120%] object-cover object-center"
+            // LCP — eager, high priority
+            // @ts-ignore — framer props
+            loading="eager"
+            fetchPriority="high"
           />
           {/* Floating stat cards */}
           <motion.div
@@ -148,6 +152,8 @@ export default function Home() {
             src={heroImg}
             alt="Los Angeles Luxury Transport"
             className="w-full h-full object-cover object-center"
+            loading="eager"
+            decoding="async"
           />
           <div className="absolute bottom-4 left-4 right-4 flex gap-3">
             <div className="flex-1 bg-white/90 backdrop-blur-md rounded-xl px-4 py-3 text-center shadow-md">
@@ -188,7 +194,7 @@ export default function Home() {
             </Link>
           </div>
           <div className="w-full lg:w-1/2 h-[50vh] lg:h-auto overflow-hidden">
-            <img src={fleetPreviewImg} alt="Eclipse Fleet" className="w-full h-full object-cover" />
+            <img src={fleetPreviewImg} alt="Eclipse Fleet — Suburban, Escalade, Lincoln" className="w-full h-full object-cover" loading="lazy" decoding="async" />
           </div>
         </div>
       </section>

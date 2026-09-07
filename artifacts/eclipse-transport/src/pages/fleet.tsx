@@ -187,8 +187,10 @@ function VehicleCard({ vehicle, index }: { vehicle: any, index: number }) {
       <div className="w-full lg:w-[55%] h-[50vh] lg:h-[65vh] overflow-hidden rounded-2xl bg-[#FCFBF8] shadow-sm relative group">
         <img 
           src={vehicle.image} 
-          alt={vehicle.name} 
+          alt={`${vehicle.name} — ${vehicle.model} luxury vehicle in Los Angeles`}
           className="w-full h-full object-cover object-center transition-transform duration-[2s] group-hover:scale-105"
+          loading="lazy"
+          decoding="async"
         />
         <div className="absolute inset-0 bg-black/10 opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
       </div>

@@ -37,6 +37,17 @@ function setLink(rel: string, href: string) {
   el.setAttribute("href", href);
 }
 
+function setJsonLd(id: string, data: Record<string, unknown>) {
+  let el = document.getElementById(id) as HTMLScriptElement | null;
+  if (!el) {
+    el = document.createElement("script");
+    el.id = id;
+    el.type = "application/ld+json";
+    document.head.appendChild(el);
+  }
+  el.textContent = JSON.stringify(data);
+}
+
 export function useSEO({
   title,
   description,
@@ -80,5 +91,41 @@ export function useSEO({
 
     // Canonical link
     setLink("canonical", resolvedCanonical);
+
+    // JSON-LD LocalBusiness — helps Google show rich results, map pack and “Book” actions
+    setJsonLd("ld-localbusiness", {
+      "@context": "https://schema.org",
+      "@type": "LimousineService",
+      name: SITE_NAME,
+      url: BASE_URL,
+      image: `${BASE_URL}/og-image.jpg`,
+      telephone: "+1-626-977-4721",
+      email: "Eclipsetransport995@gmail.com",
+      address: {
+        "@type": "PostalAddress",
+        addressLocality: "Los Angeles",
+        addressRegion: "CA",
+        addressCountry: "US",
+      },
+      areaServed: {
+        "@type": "City",
+        name: "Los Angeles",
+      },
+      priceRange: "$$",
+      description: resolvedDescription,
+    });
+
+    // JSON-LD WebSite with Sitelinks SearchBox
+    setJsonLd("ld-website", {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      name: SITE_NAME,
+      url: BASE_URL,
+      potentialAction: {
+        "@type": "SearchAction",
+        target: `${BASE_URL}/services?q={search_term_string}`,
+        "query-input": "required name=search_term_string",
+      },
+    });
   }, [title, description, keywords, canonical, ogTitle, ogDescription, ogImage, ogType, noIndex]);
 }

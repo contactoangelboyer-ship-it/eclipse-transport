@@ -1,5 +1,7 @@
 import { Router, type IRouter } from "express";
 import Stripe from "stripe";
+import { eq } from "drizzle-orm";
+import { db, bookingsTable } from "@workspace/db";
 import { calculateBookingPrice, type BookingPriceInput } from "@workspace/booking-pricing";
 
 const router: IRouter = Router();
@@ -175,6 +177,113 @@ router.post("/stripe/payment-intent", async (req, res): Promise<void> => {
     }
 
     res.status(502).json({ error: "Unable to initialise payment. Please try again." });
+  }
+});
+
+/**
+ * POST /api/stripe/webhook
+ * Stripe sends payment_intent.succeeded events here.
+ * If the booking was not saved by the frontend (network loss after payment),
+ * we recreate it from the PaymentIntent metadata so no reservation is lost.
+ * Requires STRIPE_WEBHOOK_SECRET env; if missing we log and accept the event
+ * without signature verification (still creates booking as fallback).
+ */
+router.post("/stripe/webhook", async (req, res): Promise<void> => {
+  const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET?.trim();
+  let event: Stripe.Event;
+
+  try {
+    if (webhookSecret) {
+      const sig = req.headers["stripe-signature"] as string | undefined;
+      if (!sig) { res.status(400).send("Missing stripe-signature"); return; }
+      const stripe = getStripeClient();
+      const rawBody = (req as unknown as { body: Buffer }).body;
+      const payload = Buffer.isBuffer(rawBody) ? rawBody : Buffer.from(typeof rawBody === "string" ? rawBody : JSON.stringify(rawBody));
+      event = stripe.webhooks.constructEvent(payload, sig, webhookSecret);
+    } else {
+      // Fallback: accept JSON-parsed body (Vercel without raw body config)
+      const body = req.body as Stripe.Event;
+      if (!body || !body.type) { res.status(400).send("Invalid event"); return; }
+      event = body;
+      req.log.warn("STRIPE_WEBHOOK_SECRET not set — webhook accepted without signature verification");
+    }
+  } catch (err) {
+    req.log.error({ err }, "Stripe webhook signature verification failed");
+    res.status(400).send("Webhook signature verification failed");
+    return;
+  }
+
+  if (event.type !== "payment_intent.succeeded") {
+    res.json({ received: true, ignored: event.type });
+    return;
+  }
+
+  const pi = event.data.object as Stripe.PaymentIntent;
+  const md = (pi.metadata ?? {}) as Record<string, string>;
+
+  try {
+    // Idempotency: if booking already exists with this PI, do nothing
+    const existing = await db.select().from(bookingsTable).where(eq(bookingsTable.stripePaymentIntentId, pi.id)).limit(1);
+    if (existing.length > 0) {
+      res.json({ received: true, deduped: true });
+      return;
+    }
+
+    // Try to reconstruct booking from metadata (frontend now sends full payload as JSON in metadata.booking)
+    let bookingData: Record<string, string> | null = null;
+    if (md.booking) {
+      try { bookingData = JSON.parse(md.booking); } catch { /* ignore */ }
+    }
+
+    // Fallback to legacy flat metadata
+    const get = (k: string) => bookingData?.[k] ?? md[k] ?? "";
+
+    const passengerName = get("passengerName") || get("passenger_name") || "Guest";
+    const passengerEmail = get("passengerEmail") || get("passenger_email") || (pi.receipt_email as string) || "unknown@eclipse-transportla.com";
+    const passengerPhone = get("passengerPhone") || get("passenger_phone") || "";
+    const pickupLocation = get("pickupLocation") || get("pickup_location") || "TBD";
+    const dropoffLocation = get("dropoffLocation") || get("dropoff_location") || "TBD";
+    const pickupDate = get("pickupDate") || get("pickup_date") || new Date().toISOString().slice(0, 10);
+    const pickupTime = get("pickupTime") || get("pickup_time") || "12:00";
+    const serviceType = get("serviceType") || get("service_type") || "Airport Transfer";
+    const passengers = parseInt(get("passengers") || "1", 10) || 1;
+    const luggage = parseInt(get("luggage") || "0", 10) || 0;
+    const vehicleType = get("vehicleType") || get("vehicle_type") || "";
+    const specialRequests = get("specialRequests") || get("special_requests") || `Auto-created from Stripe PI ${pi.id}`;
+    const totalPrice = pi.amount_received ? pi.amount_received / 100 : (parseFloat(get("estimatedPrice") || get("totalPrice") || "0") || null);
+
+    // Minimal validation — if critical fields missing, log and skip creation (admin can recover from Stripe dashboard)
+    if (!passengerPhone || !pickupLocation) {
+      req.log.warn({ piId: pi.id, metadata: md }, "Webhook booking skipped — insufficient metadata, manual recovery needed");
+      res.json({ received: true, skipped: "insufficient_metadata" });
+      return;
+    }
+
+    const [booking] = await db.insert(bookingsTable).values({
+      passengerName: passengerName.trim(),
+      passengerEmail: passengerEmail.trim(),
+      passengerPhone: passengerPhone.trim(),
+      pickupLocation: pickupLocation.trim(),
+      dropoffLocation: dropoffLocation.trim(),
+      pickupDate,
+      pickupTime,
+      serviceType,
+      passengers: Number.isFinite(passengers) ? passengers : 1,
+      luggage: Number.isFinite(luggage) ? luggage : 0,
+      vehicleType,
+      specialRequests,
+      totalPrice,
+      stripePaymentIntentId: pi.id,
+      status: "pending",
+      paymentStatus: "paid",
+    }).returning();
+
+    req.log.info({ bookingId: booking.id, piId: pi.id }, "Booking recovered via Stripe webhook");
+    res.json({ received: true, bookingId: booking.id });
+  } catch (err) {
+    req.log.error({ err, piId: pi.id }, "Webhook booking creation failed");
+    // Return 200 so Stripe doesn't retry endlessly on non-transient errors
+    res.status(200).json({ received: true, error: "creation_failed_but_acked" });
   }
 });
 
