@@ -99,22 +99,36 @@ const statusConfig = {
   cancelled: { label: "Cancelled", bg: "bg-red-100",    text: "text-red-700",    dot: "bg-red-400",   icon: XCircle },
 };
 
-export const getVehicleImage = (v?: { name?: string; model?: string; imageUrl?: string | null } | string | null) => {
-  if (!v) return null;
-  if (typeof v === "string") {
-    const lower = v.toLowerCase();
+export const getVehicleImage = (v?: { name?: string; model?: string; vehicleType?: string | null; imageUrl?: string | null } | string | null) => {
+  const inferFromName = (raw: string) => {
+    const lower = raw.toLowerCase();
     if (lower.includes("escalade")) return escaladeImg;
     if (lower.includes("suburban")) return suburbanImg;
     if (lower.includes("lincoln") || lower.includes("sedan")) return lincolnImg;
+    return null;
+  };
+  if (!v) return null;
+  if (typeof v === "string") {
+    const inferred = inferFromName(v);
+    if (inferred) return inferred;
+    // Raw /assets/ paths from DB (e.g. /assets/fleet-suburban.jpg) are not hashed — try infer again from filename
+    if (v.startsWith("/assets")) {
+      const inferredFromPath = inferFromName(v);
+      if (inferredFromPath) return inferredFromPath;
+    }
     return v.startsWith("http") || v.startsWith("data:") || v.startsWith("/assets") ? v : null;
   }
-  if (v.imageUrl && (v.imageUrl.startsWith("http") || v.imageUrl.startsWith("data:") || v.imageUrl.startsWith("/assets"))) {
+  // Prefer inferred imported image (hashed Vite url) over raw DB /assets/ path which 404s in production
+  const nameForInfer = `${v.name || ""} ${v.model || ""} ${v.vehicleType || ""} ${v.imageUrl || ""}`;
+  const inferred = inferFromName(nameForInfer);
+  if (inferred) return inferred;
+  if (v.imageUrl && (v.imageUrl.startsWith("http") || v.imageUrl.startsWith("data:"))) return v.imageUrl;
+  // Last resort: if imageUrl is a valid /assets/ http path, try infer from it, else return raw
+  if (v.imageUrl && v.imageUrl.startsWith("/assets")) {
+    const inferredFromPath = inferFromName(v.imageUrl);
+    if (inferredFromPath) return inferredFromPath;
     return v.imageUrl;
   }
-  const lower = `${v.name || ""} ${v.model || ""}`.toLowerCase();
-  if (lower.includes("escalade")) return escaladeImg;
-  if (lower.includes("suburban")) return suburbanImg;
-  if (lower.includes("lincoln") || lower.includes("sedan")) return lincolnImg;
   return v.imageUrl || null;
 };
 
