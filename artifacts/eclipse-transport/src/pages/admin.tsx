@@ -1953,7 +1953,7 @@ function PricingTab() {
 
         {/* Surcharges */}
         <PriceCard title="Surcharges & Gratuity" subtitle="Percentage added on top of the base fare" icon={TrendingUp}>
-          <PriceField label="Default Gratuity" fieldKey="gratuityDefault" prefix="" suffix="%" step="1" />
+          <PriceField label="Default Gratuity (optional, shown at checkout)" fieldKey="gratuityDefault" prefix="" suffix="%" step="1" />
           <PriceField label="Fuel Surcharge" fieldKey="fuelSurcharge" prefix="" suffix="%" step="0.5" />
           <PriceField label="Night Surcharge (after 10 PM)" fieldKey="nightSurcharge" prefix="" suffix="%" step="1" />
           <PriceField label="Holiday Surcharge" fieldKey="holidaySurcharge" prefix="" suffix="%" step="1" />

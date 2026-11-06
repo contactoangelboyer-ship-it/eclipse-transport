@@ -306,7 +306,7 @@ export default function Services() {
               },
               {
                 q: "Are gratuity and fuel included?",
-                a: "A standard gratuity of 20% is added at checkout. Fuel surcharges may apply for destinations beyond our primary service zone. All fees are shown transparently before you confirm.",
+                a: "Gratuity is completely optional — you can add a 20% tip at checkout if you'd like to reward your chauffeur, but it's never required. Fuel surcharges may apply for destinations beyond our primary service zone. All fees are shown transparently before you confirm.",
               },
               {
                 q: "Can I get a custom quote for large groups or multi-day events?",
