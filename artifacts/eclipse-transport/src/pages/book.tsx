@@ -71,6 +71,7 @@ const bookingSchema = z.object({
   addonMeetGreet:      z.boolean().optional(),
   addonChildSeat:      z.boolean().optional(),
   addonFlowers:        z.boolean().optional(),
+  addonTip:            z.boolean().optional(),
   extraStops:          z.coerce.number().min(0).max(10).optional(),
   specialInstructions: z.string().optional(),
   passengerName:       z.string().trim().min(2, "Enter your full name"),
@@ -183,6 +184,7 @@ export default function Book() {
         addonMeetGreet: false,
         addonChildSeat: false,
         addonFlowers:   false,
+        addonTip:       false,
       },
       mode: "onChange",
     });
@@ -229,6 +231,7 @@ export default function Book() {
     addonChildSeat: values.addonChildSeat,
     addonFlowers:   values.addonFlowers,
     extraStops:     values.extraStops,
+    includeTip:     values.addonTip === true,
   });
   // Fall back to minimum fare so step 5 always renders
   const vehicleData       = BOOKING_VEHICLES[values.vehicleId as keyof typeof BOOKING_VEHICLES];
@@ -240,7 +243,7 @@ export default function Book() {
   const paymentSignature = [
     totalEstimate, values.passengerEmail, values.serviceType, values.vehicleId,
     values.duration, routeMiles, values.addonMeetGreet, values.addonChildSeat,
-    values.addonFlowers, values.extraStops,
+    values.addonFlowers, values.extraStops, values.addonTip,
   ].join("|");
 
   /* navigation */
@@ -300,6 +303,7 @@ export default function Book() {
           addonChildSeat: values.addonChildSeat,
           addonFlowers:   values.addonFlowers,
           extraStops:     values.extraStops,
+          includeTip:     values.addonTip === true,
         },
         customerEmail: values.passengerEmail,
         metadata: {
@@ -570,6 +574,7 @@ export default function Book() {
                       addonChildSeat: values.addonChildSeat,
                       addonFlowers: values.addonFlowers,
                       extraStops: values.extraStops,
+                      includeTip: values.addonTip === true,
                     });
                     const cardMinimum = BOOKING_VEHICLES[v.id as keyof typeof BOOKING_VEHICLES]?.minimumFare ?? 0;
                     const cardTotal = cardPrice.total > 0 ? cardPrice.total : cardMinimum;
@@ -636,6 +641,7 @@ export default function Book() {
                       { field: "addonMeetGreet" as const, label: "Meet & Greet", desc: "Chauffeur meets you at the gate (+$25)" },
                       { field: "addonChildSeat" as const, label: "Child Safety Seat", desc: "Pre-installed certified seat (+$20)" },
                       { field: "addonFlowers" as const,   label: "Welcome Flowers",   desc: "Seasonal bouquet on arrival (+$45)" },
+                      { field: "addonTip" as const,        label: "Add Gratuity (20%)", desc: "Optional tip for your chauffeur — add it only if you'd like to" },
                     ].map(({ field, label, desc }, i, arr) => (
                       <div key={field}>
                         <label className="flex items-center justify-between py-3 cursor-pointer">
@@ -772,10 +778,12 @@ export default function Book() {
                           <span className="font-semibold">{formatUsd(priceBreakdown.addonsTotal)}</span>
                         </div>
                       )}
-                      <div className="flex justify-between text-gray-700">
-                        <span>Gratuity (20%)</span>
-                        <span className="font-semibold">{formatUsd(priceBreakdown.gratuity)}</span>
-                      </div>
+                      {priceBreakdown.gratuity > 0 && (
+                        <div className="flex justify-between text-gray-700">
+                          <span>Gratuity (20%)</span>
+                          <span className="font-semibold">{formatUsd(priceBreakdown.gratuity)}</span>
+                        </div>
+                      )}
                       <div className="flex justify-between font-bold text-gray-900 border-t border-gray-200 pt-2 mt-1">
                         <span>Total</span>
                         <span>{formatUsd(displayTotal)}</span>

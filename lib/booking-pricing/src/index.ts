@@ -46,6 +46,8 @@ export type BookingPriceInput = {
   addonChildSeat?: boolean;
   addonFlowers?: boolean;
   extraStops?: number;
+  /** When true, a 20% gratuity is added to the total. Default: false (tip is optional). */
+  includeTip?: boolean;
 };
 
 export type BookingPriceBreakdown = {
@@ -86,7 +88,9 @@ export function calculateBookingPrice(input: BookingPriceInput): BookingPriceBre
     (input.addonChildSeat ? BOOKING_ADDON_PRICES.childSeat : 0) +
     (input.addonFlowers ? BOOKING_ADDON_PRICES.flowers : 0) +
     extraStops * BOOKING_ADDON_PRICES.extraStop;
-  const gratuity = baseRate > 0 ? roundMoney(baseRate * 0.2) : 0;
+  // Gratuity is optional — only added when the rider explicitly opts in.
+  const includeTip = input.includeTip === true;
+  const gratuity = includeTip && baseRate > 0 ? roundMoney(baseRate * 0.2) : 0;
 
   return {
     baseRate: roundMoney(baseRate),
