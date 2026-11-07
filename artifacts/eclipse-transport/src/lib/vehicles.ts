@@ -12,17 +12,17 @@ import { BOOKING_VEHICLES } from "@workspace/booking-pricing";
 
 export interface CatalogVehicle {
   id: string;
-  category: "SUVs" | "Sedans" | "Vans" | "Limousines" | "Party Buses";
+  category: "SUVs" | "Sedans";
   name: string;
   year: string;
   model: string;
   description: string;
   capacity: number;       // max passengers
-  luggage: string;         // display label, e.g. "6 bags"
+  luggage: string;        // display label, e.g. "6 bags"
   luggageCount: number;   // numeric bag count
   minimumFare: string;    // display label
-  extraMileRate: string; // display label
-  hourlyRate: string;    // display label
+  extraMileRate: string;  // display label
+  hourlyRate: string;     // display label
   hasWifi: boolean;
   hasPrivacy: boolean;
   hasChildSeat: boolean;
@@ -42,7 +42,7 @@ export const VEHICLE_CATALOG: CatalogVehicle[] = [
     category: "SUVs",
     name: "Suburban",
     year: "2025",
-    model: "Chevrolet Suburban S",
+    model: "Chevrolet Suburban",
     description:
       "The pinnacle of understated luxury. Exceptionally spacious, impeccably maintained, and equipped for the most demanding clientele.",
     capacity: 7,
@@ -82,9 +82,9 @@ export const VEHICLE_CATALOG: CatalogVehicle[] = [
   {
     id: "sedan",
     category: "Sedans",
-    name: "Lincoln Continental",
+    name: "Sedan",
     year: "2024",
-    model: "Lincoln Continental",
+    model: "Luxury Sedan",
     description:
       "Classic executive elegance. A quiet, smooth journey perfect for airport transfers and corporate travel with ample legroom.",
     capacity: 3,

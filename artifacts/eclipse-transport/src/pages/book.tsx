@@ -73,6 +73,7 @@ const bookingSchema = z.object({
   addonFlowers:        z.boolean().optional(),
   extraStops:          z.coerce.number().min(0).max(10).optional(),
   specialInstructions: z.string().optional(),
+  gratuityPercent:     z.coerce.number().min(0).max(100).optional(),
   passengerName:       z.string().trim().min(2, "Enter your full name"),
   passengerEmail:      z.string().trim().email("Enter a valid email"),
   passengerPhone:      z.string().trim().min(7, "Enter a valid phone number").regex(/^[\d\s()+\-]{7,20}$/, "Enter a valid phone number"),
@@ -175,14 +176,15 @@ export default function Book() {
     useForm<BookingFormValues>({
       resolver: zodResolver(bookingSchema),
       defaultValues: {
-        serviceType:    "Airport Transfer",
-        passengers:     1,
-        luggage:        1,
-        duration:       3,
-        extraStops:     0,
-        addonMeetGreet: false,
-        addonChildSeat: false,
-        addonFlowers:   false,
+        serviceType:     "Airport Transfer",
+        passengers:      1,
+        luggage:         1,
+        duration:        3,
+        extraStops:      0,
+        addonMeetGreet:  false,
+        addonChildSeat:  false,
+        addonFlowers:    false,
+        gratuityPercent: 0,
       },
       mode: "onChange",
     });
@@ -221,14 +223,15 @@ export default function Book() {
 
   /* price — uses minimum fare when routeMiles not yet calculated */
   const priceBreakdown = calculateBookingPrice({
-    vehicleId:      values.vehicleId || "",
-    tripType:       values.serviceType,
-    duration:       values.duration,
-    routeMiles:     isHourly ? null : (routeMiles ?? (values.vehicleId ? 0 : null)),
-    addonMeetGreet: values.addonMeetGreet,
-    addonChildSeat: values.addonChildSeat,
-    addonFlowers:   values.addonFlowers,
-    extraStops:     values.extraStops,
+    vehicleId:       values.vehicleId || "",
+    tripType:        values.serviceType,
+    duration:        values.duration,
+    routeMiles:      isHourly ? null : (routeMiles ?? (values.vehicleId ? 0 : null)),
+    addonMeetGreet:  values.addonMeetGreet,
+    addonChildSeat:  values.addonChildSeat,
+    addonFlowers:    values.addonFlowers,
+    extraStops:      values.extraStops,
+    gratuityPercent: values.gratuityPercent ?? 0,
   });
   // Fall back to minimum fare so step 5 always renders
   const vehicleData       = BOOKING_VEHICLES[values.vehicleId as keyof typeof BOOKING_VEHICLES];
@@ -240,7 +243,7 @@ export default function Book() {
   const paymentSignature = [
     totalEstimate, values.passengerEmail, values.serviceType, values.vehicleId,
     values.duration, routeMiles, values.addonMeetGreet, values.addonChildSeat,
-    values.addonFlowers, values.extraStops,
+    values.addonFlowers, values.extraStops, values.gratuityPercent ?? 0,
   ].join("|");
 
   /* navigation */
@@ -300,6 +303,7 @@ export default function Book() {
           addonChildSeat: values.addonChildSeat,
           addonFlowers:   values.addonFlowers,
           extraStops:     values.extraStops,
+          gratuityPercent: values.gratuityPercent ?? 0,
         },
         customerEmail: values.passengerEmail,
         metadata: {
@@ -384,7 +388,7 @@ export default function Book() {
       specialRequests: reqs.join(" | "),
       estimatedPrice:  displayTotal,
       stripePaymentIntentId: piId,
-    });
+    } as any);
   };
 
   const onSubmit = () => {};
@@ -748,6 +752,38 @@ export default function Book() {
                     </div>
                   </div>
 
+                  {/* Driver Gratuity (Optional) */}
+                  <div className="bg-gray-50 rounded-2xl p-5">
+                    <div className="flex justify-between items-center mb-3">
+                      <p className="text-[11px] font-bold text-gray-500 uppercase tracking-wider">Driver Gratuity</p>
+                      <span className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider">Optional</span>
+                    </div>
+                    <div className="grid grid-cols-4 gap-2">
+                      {[
+                        { label: "No Tip", value: 0 },
+                        { label: "10%", value: 10 },
+                        { label: "15%", value: 15 },
+                        { label: "20%", value: 20 },
+                      ].map((opt) => {
+                        const isSelected = (values.gratuityPercent ?? 0) === opt.value;
+                        return (
+                          <button
+                            key={opt.value}
+                            type="button"
+                            onClick={() => setValue("gratuityPercent", opt.value)}
+                            className={`py-2.5 rounded-xl font-bold text-xs transition-all ${
+                              isSelected
+                                ? "bg-black text-white shadow-sm"
+                                : "bg-white text-gray-700 border border-gray-200 hover:border-gray-400"
+                            }`}
+                          >
+                            {opt.label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
                   {/* Price breakdown */}
                   {priceBreakdown.baseRate > 0 && (
                     <div className="bg-gray-50 rounded-2xl p-5 space-y-2 text-sm">
@@ -773,8 +809,8 @@ export default function Book() {
                         </div>
                       )}
                       <div className="flex justify-between text-gray-700">
-                        <span>Gratuity (20%)</span>
-                        <span className="font-semibold">{formatUsd(priceBreakdown.gratuity)}</span>
+                        <span>Gratuity ({(values.gratuityPercent ?? 0)}%{!(values.gratuityPercent) ? " · Optional" : ""})</span>
+                        <span className="font-semibold">{priceBreakdown.gratuity > 0 ? formatUsd(priceBreakdown.gratuity) : "$0.00"}</span>
                       </div>
                       <div className="flex justify-between font-bold text-gray-900 border-t border-gray-200 pt-2 mt-1">
                         <span>Total</span>

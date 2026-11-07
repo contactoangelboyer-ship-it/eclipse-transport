@@ -2,11 +2,11 @@ export const BOOKING_VEHICLES = {
   suburban: {
     id: "suburban",
     label: "Chevrolet Suburban",
-    baseFare: 140.00,
+    baseFare: 120.00,
     baseMilesLimit: 15,
     ratePerMile: 2.95,
     hourlyRate: 80,
-    minimumFare: 140, // Base Price (15 miles included)
+    minimumFare: 120, // Base Price (15 miles included)
   },
   escalade: {
     id: "escalade",
@@ -46,6 +46,8 @@ export type BookingPriceInput = {
   addonChildSeat?: boolean;
   addonFlowers?: boolean;
   extraStops?: number;
+  gratuityPercent?: number; // Optional gratuity percentage (e.g. 0, 10, 15, 20). Defaults to 0 (optional).
+  tipAmount?: number;       // Optional custom tip in dollars.
 };
 
 export type BookingPriceBreakdown = {
@@ -86,7 +88,17 @@ export function calculateBookingPrice(input: BookingPriceInput): BookingPriceBre
     (input.addonChildSeat ? BOOKING_ADDON_PRICES.childSeat : 0) +
     (input.addonFlowers ? BOOKING_ADDON_PRICES.flowers : 0) +
     extraStops * BOOKING_ADDON_PRICES.extraStop;
-  const gratuity = baseRate > 0 ? roundMoney(baseRate * 0.2) : 0;
+
+  let gratuity = 0;
+  if (input.tipAmount != null && Number.isFinite(Number(input.tipAmount))) {
+    gratuity = roundMoney(Math.max(0, Number(input.tipAmount)));
+  } else if (input.gratuityPercent != null && Number.isFinite(Number(input.gratuityPercent))) {
+    const pct = Math.max(0, Number(input.gratuityPercent));
+    gratuity = baseRate > 0 ? roundMoney(baseRate * (pct / 100)) : 0;
+  } else {
+    // Optional by default (0%)
+    gratuity = 0;
+  }
 
   return {
     baseRate: roundMoney(baseRate),

@@ -145,7 +145,11 @@ export const getServiceImage = (s?: { name?: string; imageUrl?: string | null } 
   return imgUrl || null;
 };
 
-export const DEFAULT_FLEET_VEHICLES: Vehicle[] = [
+export interface AdminVehicle extends Vehicle {
+  ratePerMile?: number;
+}
+
+export const DEFAULT_FLEET_VEHICLES: AdminVehicle[] = [
   {
     id: 1,
     name: "Suburban",
@@ -154,7 +158,7 @@ export const DEFAULT_FLEET_VEHICLES: Vehicle[] = [
     capacity: 7,
     luggageCapacity: 6,
     vehicleType: "Luxury SUV",
-    flatRate: 140, // Base Price (15 miles included)
+    flatRate: 120, // Base Price (15 miles included)
     ratePerMile: 2.95,
     hourlyRate: 80,
     imageUrl: suburbanImg,
@@ -179,7 +183,7 @@ export const DEFAULT_FLEET_VEHICLES: Vehicle[] = [
   {
     id: 3,
     name: "Sedan",
-    model: "Lincoln Continental",
+    model: "Luxury Sedan",
     year: 2024,
     capacity: 3,
     luggageCapacity: 3,
@@ -205,7 +209,8 @@ function defaultRateFor(name: string | undefined, field: "ratePerMile" | "flatRa
       if (isSedan) return 2.40;
       return 2.95;
     case "flatRate":
-      return isSuv ? 140 : isSedan ? 100 : 140;
+      if (lower.includes("suburban")) return 120;
+      return isSuv ? 140 : isSedan ? 100 : 120;
     case "hourlyRate":
       if (lower.includes("escalade")) return 95;
       if (lower.includes("suburban")) return 80;
@@ -775,8 +780,8 @@ function BookingsTab() {
                         {b.totalPrice ? `$${b.totalPrice}` : <span className="text-gray-300 font-normal text-xs">TBD</span>}
                       </td>
                       <td className="px-8 py-5">
-                        <span className={`px-2 py-1 text-[10px] font-bold uppercase tracking-wider rounded-full ${b.paymentStatus === 'paid' ? 'bg-green-50 text-green-700' : b.paymentStatus === 'refunded' ? 'bg-red-50 text-red-700' : 'bg-yellow-50 text-yellow-700'}`}>
-                          {b.paymentStatus || 'pending'}
+                        <span className={`px-2 py-1 text-[10px] font-bold uppercase tracking-wider rounded-full ${(b as any).paymentStatus === 'paid' ? 'bg-green-50 text-green-700' : (b as any).paymentStatus === 'refunded' ? 'bg-red-50 text-red-700' : 'bg-yellow-50 text-yellow-700'}`}>
+                          {(b as any).paymentStatus || 'pending'}
                         </span>
                       </td>
                       <td className="px-8 py-5"><StatusBadge status={b.status} /></td>
@@ -807,7 +812,7 @@ function BookingsTab() {
                 <AdminFieldRow label="Phone" value={detailBooking.passengerPhone} />
                 <AdminFieldRow label="Email" value={detailBooking.passengerEmail} />
                 <AdminFieldRow label="Passengers" value={detailBooking.passengers ?? 1} />
-                <AdminFieldRow label="Luggage" value={`${detailBooking.luggage ?? 0} bag(s)`} />
+                <AdminFieldRow label="Luggage" value={`${(detailBooking as any).luggage ?? 0} bag(s)`} />
               </div>
             </div>
 
@@ -815,9 +820,9 @@ function BookingsTab() {
               <h3 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-4">Vehicle</h3>
               <div className="bg-white border border-gray-100 p-6 rounded-2xl shadow-sm flex items-center gap-5">
                 {(() => {
-                  const vImg = getVehicleImage(detailBooking.vehicleType || "");
+                  const vImg = getVehicleImage((detailBooking as any).vehicleType || "");
                   return vImg ? (
-                    <img src={vImg} alt={detailBooking.vehicleType || "Vehicle"} className="w-24 h-24 rounded-2xl object-cover shrink-0" />
+                    <img src={vImg} alt={(detailBooking as any).vehicleType || "Vehicle"} className="w-24 h-24 rounded-2xl object-cover shrink-0" />
                   ) : (
                     <div className="w-24 h-24 rounded-2xl bg-gray-50 flex items-center justify-center shrink-0">
                       <Car size={28} className="text-gray-300" />
@@ -825,7 +830,7 @@ function BookingsTab() {
                   );
                 })()}
                 <div className="min-w-0">
-                  <p className="font-bold text-gray-900 text-lg tracking-tight">{detailBooking.vehicleType || "Not specified"}</p>
+                  <p className="font-bold text-gray-900 text-lg tracking-tight">{(detailBooking as any).vehicleType || "Not specified"}</p>
                   <p className="text-xs text-gray-400 font-medium mt-0.5">Selected by passenger at booking</p>
                 </div>
               </div>
@@ -862,9 +867,9 @@ function BookingsTab() {
                 <div className="flex items-center justify-between mb-4 pb-4 border-b border-gray-100">
                   <span className="font-bold text-gray-900">Payment Status</span>
                   <select
-                    className={`border rounded-xl px-4 py-2 font-bold text-xs outline-none transition-colors ${detailBooking.paymentStatus === 'paid' ? 'bg-green-50 text-green-700 border-green-200' : detailBooking.paymentStatus === 'refunded' ? 'bg-red-50 text-red-700 border-red-200' : 'bg-yellow-50 text-yellow-700 border-yellow-200'}`}
-                    value={detailBooking.paymentStatus ?? "pending"}
-                    onChange={e => updateBooking.mutate({ id: detailBooking.id, data: { paymentStatus: e.target.value as "pending" | "paid" | "refunded" } }, {
+                    className={`border rounded-xl px-4 py-2 font-bold text-xs outline-none transition-colors ${(detailBooking as any).paymentStatus === 'paid' ? 'bg-green-50 text-green-700 border-green-200' : (detailBooking as any).paymentStatus === 'refunded' ? 'bg-red-50 text-red-700 border-red-200' : 'bg-yellow-50 text-yellow-700 border-yellow-200'}`}
+                    value={(detailBooking as any).paymentStatus ?? "pending"}
+                    onChange={e => updateBooking.mutate({ id: detailBooking.id, data: { paymentStatus: e.target.value as "pending" | "paid" | "refunded" } as any }, {
                       onSuccess: () => qc.invalidateQueries({ queryKey: getGetBookingQueryKey(detailBooking.id) })
                     })}
                     disabled={updateBooking.isPending}
@@ -874,11 +879,11 @@ function BookingsTab() {
                     <option value="refunded">Refunded</option>
                   </select>
                 </div>
-                {detailBooking.stripePaymentIntentId && (
+                {(detailBooking as any).stripePaymentIntentId && (
                   <div className="mb-4 pb-4 border-b border-gray-100 flex justify-between items-center">
                     <span className="font-bold text-gray-900">Stripe ID</span>
-                    <a href={`https://dashboard.stripe.com/payments/${detailBooking.stripePaymentIntentId}`} target="_blank" rel="noopener noreferrer" className="text-blue-500 font-mono text-[10px] hover:underline bg-blue-50 px-3 py-1.5 rounded-full truncate max-w-[150px]">
-                      {detailBooking.stripePaymentIntentId}
+                    <a href={`https://dashboard.stripe.com/payments/${(detailBooking as any).stripePaymentIntentId}`} target="_blank" rel="noopener noreferrer" className="text-blue-500 font-mono text-[10px] hover:underline bg-blue-50 px-3 py-1.5 rounded-full truncate max-w-[150px]">
+                      {(detailBooking as any).stripePaymentIntentId}
                     </a>
                   </div>
                 )}
@@ -946,11 +951,11 @@ function BookingsTab() {
                       setBf(prev => ({
                         ...prev,
                         vehicleType: vName,
-                        estimatedPrice: prev.estimatedPrice || (selV ? selV.flatRate : 140)
+                        estimatedPrice: prev.estimatedPrice || (selV ? selV.flatRate : 120)
                       }));
                     }}>
                       <option value="">Select vehicle...</option>
-                      <option value="Suburban">Suburban ($140 base · $2.95/mi · $80/hr)</option>
+                      <option value="Suburban">Suburban ($120 base · $2.95/mi · $80/hr)</option>
                       <option value="Escalade">Escalade ($140 base · $3.40/mi · $95/hr)</option>
                       <option value="Sedan">Sedan / Lincoln ($100 base · $2.40/mi · $75/hr)</option>
                     </select>
@@ -1175,7 +1180,7 @@ function FleetTab() {
 
   const openCreate = () => { setForm(emptyV); setAmenitiesInput(""); setModal('create'); };
   const openEdit = (v: Vehicle) => {
-    setForm({ name: v.name, model: v.model, year: v.year, capacity: v.capacity, imageUrl: v.imageUrl ?? "", description: v.description ?? "", amenities: v.amenities ?? [], vehicleType: v.vehicleType ?? "", luggageCapacity: v.luggageCapacity ?? 0, ratePerMile: v.ratePerMile ?? 0, flatRate: v.flatRate ?? 0, hourlyRate: v.hourlyRate ?? 0 });
+    setForm({ name: v.name, model: v.model, year: v.year, capacity: v.capacity, imageUrl: v.imageUrl ?? "", description: v.description ?? "", amenities: v.amenities ?? [], vehicleType: v.vehicleType ?? "", luggageCapacity: v.luggageCapacity ?? 0, ratePerMile: (v as any).ratePerMile ?? 0, flatRate: v.flatRate ?? 0, hourlyRate: v.hourlyRate ?? 0 });
     setAmenitiesInput((v.amenities ?? []).join(", "));
     setEditId(v.id);
     setModal('edit');
@@ -1183,7 +1188,7 @@ function FleetTab() {
 
   const handleSave = () => {
     const amenities = amenitiesInput.split(",").map(s => s.trim()).filter(Boolean);
-    const payload = { ...form, amenities, year: Number(form.year), capacity: Number(form.capacity), luggageCapacity: Number(form.luggageCapacity), ratePerMile: Number(form.ratePerMile), flatRate: Number(form.flatRate), hourlyRate: Number(form.hourlyRate) };
+    const payload = { ...form, amenities, year: Number(form.year), capacity: Number(form.capacity), luggageCapacity: Number(form.luggageCapacity), ratePerMile: Number(form.ratePerMile), flatRate: Number(form.flatRate), hourlyRate: Number(form.hourlyRate) } as any;
     if (modal === 'create') {
       createFleet.mutate({ data: payload }, { onSuccess: () => { qc.invalidateQueries({ queryKey: getAdminListFleetQueryKey() }); setModal(null); } });
     } else if (editId != null) {
@@ -1248,7 +1253,7 @@ function FleetTab() {
                         </div>
                         <div className="flex justify-between items-center text-gray-700">
                           <span className="font-medium text-gray-500">Extra Mile Rate</span>
-                          <span className="font-bold text-gray-900">${Number(v.ratePerMile || defaultRateFor(v.name, "ratePerMile")).toFixed(2)}/mi</span>
+                          <span className="font-bold text-gray-900">${Number((v as any).ratePerMile || defaultRateFor(v.name, "ratePerMile")).toFixed(2)}/mi</span>
                         </div>
                         <div className="flex justify-between items-center text-gray-700">
                           <span className="font-medium text-gray-500">Hourly Rate</span>
@@ -1989,14 +1994,14 @@ function PerVehicleRates() {
   useEffect(() => {
     const initial: Record<number, number> = {};
     effectiveFleet.forEach(v => {
-      initial[v.id] = v.ratePerMile || defaultRateFor(v.name, "ratePerMile");
+      initial[v.id] = (v as any).ratePerMile || defaultRateFor(v.name, "ratePerMile");
     });
     setRates(initial);
   }, [fleet]);
 
   const handleSaveVehicle = (v: Vehicle) => {
     updateFleet.mutate(
-      { id: v.id, data: { name: v.name, model: v.model, year: v.year, capacity: v.capacity, imageUrl: v.imageUrl ?? "", description: v.description ?? "", amenities: v.amenities ?? [], vehicleType: v.vehicleType ?? "", luggageCapacity: v.luggageCapacity ?? 0, ratePerMile: rates[v.id] ?? (v.ratePerMile || 0), flatRate: v.flatRate ?? 0, hourlyRate: v.hourlyRate ?? 0 } },
+      { id: v.id, data: { name: v.name, model: v.model, year: v.year, capacity: v.capacity, imageUrl: v.imageUrl ?? "", description: v.description ?? "", amenities: v.amenities ?? [], vehicleType: v.vehicleType ?? "", luggageCapacity: v.luggageCapacity ?? 0, ratePerMile: rates[v.id] ?? ((v as any).ratePerMile || 0), flatRate: v.flatRate ?? 0, hourlyRate: v.hourlyRate ?? 0 } as any },
       {
         onSuccess: () => {
           qc.invalidateQueries({ queryKey: getAdminListFleetQueryKey() });
@@ -2055,7 +2060,7 @@ function PerVehicleRates() {
                       type="number"
                       step="0.01"
                       min="0"
-                      value={rates[v.id] ?? (v.ratePerMile || 0)}
+                      value={rates[v.id] ?? ((v as any).ratePerMile || 0)}
                       onChange={e => setRates(p => ({ ...p, [v.id]: Number(e.target.value) }))}
                       className="w-full border border-gray-200 rounded-xl py-2 pl-14 pr-8 text-sm font-bold text-gray-900 outline-none focus:border-gray-900 transition-colors bg-white text-right shadow-xs"
                     />

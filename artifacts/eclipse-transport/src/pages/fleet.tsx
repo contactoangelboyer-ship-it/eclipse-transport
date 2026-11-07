@@ -17,9 +17,6 @@ export default function Fleet() {
 
   const suvs = vehicles.filter(v => v.category === "SUVs");
   const sedans = vehicles.filter(v => v.category === "Sedans");
-  const vans = vehicles.filter(v => v.category === "Vans");
-  const limos = vehicles.filter(v => v.category === "Limousines");
-  const partyBuses = vehicles.filter(v => v.category === "Party Buses");
 
   return (
     <Layout>
@@ -86,39 +83,6 @@ export default function Fleet() {
               ))}
             </div>
           </div>
-
-          {vans.length > 0 && (
-            <div className="mb-32">
-              <h2 className="text-[11px] font-bold uppercase tracking-[0.25em] text-[#1A1A1A]/40 mb-16 border-b border-black/5 pb-4">Van Class</h2>
-              <div className="flex flex-col gap-24">
-                {vans.map((vehicle, index) => (
-                  <VehicleCard key={vehicle.id} vehicle={vehicle} index={index} />
-                ))}
-              </div>
-            </div>
-          )}
-
-          {limos.length > 0 && (
-            <div className="mb-32">
-              <h2 className="text-[11px] font-bold uppercase tracking-[0.25em] text-[#1A1A1A]/40 mb-16 border-b border-black/5 pb-4">Limousine Class</h2>
-              <div className="flex flex-col gap-24">
-                {limos.map((vehicle, index) => (
-                  <VehicleCard key={vehicle.id} vehicle={vehicle} index={index} />
-                ))}
-              </div>
-            </div>
-          )}
-
-          {partyBuses.length > 0 && (
-            <div className="mb-32">
-              <h2 className="text-[11px] font-bold uppercase tracking-[0.25em] text-[#1A1A1A]/40 mb-16 border-b border-black/5 pb-4">Party Bus Class</h2>
-              <div className="flex flex-col gap-24">
-                {partyBuses.map((vehicle, index) => (
-                  <VehicleCard key={vehicle.id} vehicle={vehicle} index={index} />
-                ))}
-              </div>
-            </div>
-          )}
 
           <div className="mt-32" data-testid="section-comparison">
             <div className="text-center mb-16">
